@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 from agentify.templates import render
 
 CONFIG_FILE = ".agentify.toml"
+HEADER = re.compile(r"^\s*\[contract\]\s*(?:#.*)?$")
 
 
 @dataclass(frozen=True)
@@ -22,9 +24,9 @@ def _set_contract_level(text: str, level: int) -> str:
     lines = text.split("\n")
     contract_idx = None
 
-    # Find [contract] table header
+    # Find [contract] table header (may have inline comments)
     for i, line in enumerate(lines):
-        if line.strip() == "[contract]":
+        if HEADER.match(line):
             contract_idx = i
             break
 
@@ -40,12 +42,10 @@ def _set_contract_level(text: str, level: int) -> str:
     # Scan lines after [contract] to find level line or next table
     for i in range(contract_idx + 1, len(lines)):
         line = lines[i]
-        if line.startswith("["):
+        if line.strip().startswith("["):
             break
         if level_idx is None:
             # Check if this line is a level assignment
-            import re
-
             match = re.match(r"^(\s*)level\s*=\s*\d+(.*)$", line)
             if match:
                 level_idx = i

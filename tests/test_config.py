@@ -86,3 +86,13 @@ def test_ensure_level_preserves_a_trailing_comment_on_the_level_line(tmp_path: P
     (tmp_path / CONFIG_FILE).write_text("[contract]\nlevel = 1  # adopted\n")
     ensure_level(tmp_path, 3, dry_run=False)
     assert "level = 3  # adopted" in (tmp_path / CONFIG_FILE).read_text()
+
+
+def test_ensure_level_recognises_a_commented_contract_header(tmp_path: Path):
+    (tmp_path / CONFIG_FILE).write_text("[contract]  # my settings\nlevel = 1\n")
+    ensure_level(tmp_path, 3, dry_run=False)
+    cfg = load_config(tmp_path)
+    assert cfg.level == 3
+    text = (tmp_path / CONFIG_FILE).read_text()
+    assert text.count("[contract]") == 1
+    assert "# my settings" in text

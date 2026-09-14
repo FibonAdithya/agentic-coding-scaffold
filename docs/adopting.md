@@ -6,9 +6,11 @@
     agentify check <repo>
 
 `adopt` writes only what is missing and prints one line per file: `wrote`,
-`exists`, `appended`, or `skipped`. A file it reports as `exists` is yours; if
-it lacks something the contract needs, `check` says what and names the
-template to copy from.
+`exists`, `appended` (the `.gitignore` block and the ruff block in
+`pyproject.toml`), `raised` (the level in `.agentify.toml`), or `skipped`.
+A file it reports as `exists` is yours; if it lacks something the contract
+needs, `check` says what is missing, and the "What adopt writes" table in
+`CONTRACT.md` names the template to copy from.
 
 Commit the generated files before filling the markers, so the diff that adds
 the project-specific content is readable on its own.

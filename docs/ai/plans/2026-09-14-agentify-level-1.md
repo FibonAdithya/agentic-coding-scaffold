@@ -1904,11 +1904,11 @@ def check(repo: Repo) -> Result:
     concurrency = workflow.get("concurrency")
     if not isinstance(concurrency, dict) or concurrency.get("cancel-in-progress") is not True:
         return Result(ID, FAIL, f"{WORKFLOW}: concurrency with cancel-in-progress: true is required")
-    jobs = workflow.get("jobs") or {}
+    jobs = {name: (job or {}) for name, job in (workflow.get("jobs") or {}).items()}
     for name, job in jobs.items():
         if "timeout-minutes" not in job:
             return Result(ID, FAIL, f"{WORKFLOW}: job {name} has no timeout-minutes")
-    runs = [str(step.get("run", "")) for job in jobs.values() for step in job.get("steps", [])]
+    runs = [str(step.get("run", "")) for job in jobs.values() for step in (job.get("steps") or [])]
     if not any("make check" in run for run in runs):
         return Result(ID, FAIL, f"{WORKFLOW}: no step runs `make check`")
     return Result(ID, PASS, "ci.yml runs `make check` on PRs and main with read-only permissions")

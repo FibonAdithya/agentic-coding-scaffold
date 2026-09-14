@@ -8,5 +8,7 @@ level = 1
 
 [docs]
 # Reference prefixes the docs test treats as correctly absent from a clean
-# checkout: build products, downloaded data, run directories.
-ignore_references = []
+# checkout: build products, downloaded data, run directories. `.claude/` and
+# `.agentify/` are agent scratch state (see CONTRACT.md's L1.7 row); they are
+# gitignored and absent from a clean checkout, but CONTRACT.md names them.
+ignore_references = [".claude/", ".agentify/"]

@@ -43,6 +43,11 @@ def test_good_workflow_passes(tmp_path: Path):
     assert l1_3_ci.check(write(tmp_path, GOOD)).status == PASS
 
 
+def test_empty_workflow_file_fails_cleanly(tmp_path: Path):
+    r = l1_3_ci.check(write(tmp_path, ""))
+    assert r.status == FAIL and "not a YAML mapping" in r.reason
+
+
 def test_triggers_handles_the_on_key_parsed_as_true():
     assert l1_3_ci.triggers(yaml.safe_load("on: [push, pull_request]\n")) == {
         "push": {},

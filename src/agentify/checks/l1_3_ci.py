@@ -41,6 +41,8 @@ def check(repo: Repo) -> Result:
         workflow = yaml.safe_load(text)
     except yaml.YAMLError as exc:
         return Result(ID, FAIL, f"{WORKFLOW}: not valid YAML: {exc}")
+    if not isinstance(workflow, dict):
+        return Result(ID, FAIL, f"{WORKFLOW}: not a YAML mapping")
     on = triggers(workflow)
     if "pull_request" not in on:
         return Result(ID, FAIL, f"{WORKFLOW}: no pull_request trigger")

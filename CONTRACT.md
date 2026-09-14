@@ -17,7 +17,7 @@ An agent can read the repo and know what is true.
 | L1.4 Authority order | Every backticked path in the router's *Source of truth* section exists, and the section names at least one. | `src/agentify/checks/l1_4_authority.py::check` |
 | L1.5 References resolve | In `AGENTS.md`, `CLAUDE.md`, `README.md`, and every `.md` the authority section names outside `docs/ai/`: every backticked path exists, every `#anchor` is a heading in its target, every `::symbol` is defined there (Python only), and no citation uses a line number. Prefixes under `[docs] ignore_references` in `.agentify.toml` are exempt. | `src/agentify/checks/l1_5_references.py::check`, scanner in `src/agentify/docs_refs.py::scan_docs` |
 | L1.6 AI notes quarantined | `docs/ai/README.md` exists and contains the phrase "not the source of truth". | `src/agentify/checks/l1_6_notes.py::check` |
-| L1.7 Ignore hygiene | `.gitignore` lists `.superpowers/`, .claude/worktrees/, `.claude/settings.local.json`, .agentify/, plus the language adapter's cache directories. | `src/agentify/checks/l1_7_ignore.py::check` |
+| L1.7 Ignore hygiene | `.gitignore` lists `.superpowers/`, `.claude/worktrees/`, `.claude/settings.local.json`, `.agentify/`, plus the language adapter's cache directories. Patterns are matched textually; `.venv` does not satisfy `.venv/`. | `src/agentify/checks/l1_7_ignore.py::check` |
 
 ## What adopt writes for level 1
 

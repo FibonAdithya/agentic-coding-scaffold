@@ -71,6 +71,11 @@ def test_section_returns_body_until_next_h2():
     assert section(AGENTS, "Nope") == ""
 
 
+def test_section_matches_a_heading_with_trailing_whitespace():
+    text = "# x\n\n## Source of truth, in order \n\n1. `README.md`.\n"
+    assert section(text, "Source of truth, in order").strip() == "1. `README.md`."
+
+
 def test_authoritative_docs_are_root_docs_plus_listed_md_outside_docs_ai(
     tmp_path: Path,
 ):

@@ -42,13 +42,15 @@ class Unresolved:
 def section(text: str, heading: str) -> str:
     """The lines under `## {heading}` up to the next `## `, or empty."""
     lines = text.splitlines()
-    try:
-        start = lines.index(f"## {heading}") + 1
-    except ValueError:
+    wanted = f"## {heading}"
+    start = next(
+        (i + 1 for i, line in enumerate(lines) if line.strip() == wanted), None
+    )
+    if start is None:
         return ""
     body: list[str] = []
     for line in lines[start:]:
-        if line.startswith("## "):
+        if line.strip().startswith("## "):
             break
         body.append(line)
     return "\n".join(body)

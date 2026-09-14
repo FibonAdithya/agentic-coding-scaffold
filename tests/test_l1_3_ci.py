@@ -107,6 +107,34 @@ def test_generate_for_python_writes_a_workflow_that_passes(python_repo: Path):
     ]
 
 
+def test_null_steps_fail_cleanly(tmp_path: Path):
+    null_steps_workflow = GOOD.replace(
+        "    steps:\n      - uses: actions/checkout@v4\n      - run: make check\n",
+        "    steps:\n",
+    )
+    r = l1_3_ci.check(write(tmp_path, null_steps_workflow))
+    assert r.status == FAIL and "make check" in r.reason
+
+
+def test_null_job_fails_cleanly(tmp_path: Path):
+    null_job_workflow = """\
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+"""
+    r = l1_3_ci.check(write(tmp_path, null_job_workflow))
+    assert r.status == FAIL and "timeout-minutes" in r.reason
+
+
 def test_generate_without_adapter_leaves_a_fill_marker(tmp_path: Path):
     repo = Repo.open(tmp_path)
     l1_3_ci.generate(repo, dry_run=False)

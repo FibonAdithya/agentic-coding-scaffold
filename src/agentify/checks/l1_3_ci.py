@@ -65,12 +65,13 @@ def check(repo: Repo) -> Result:
         )
     jobs = workflow.get("jobs") or {}
     for name, job in jobs.items():
+        job = job or {}
         if "timeout-minutes" not in job:
             return Result(ID, FAIL, f"{WORKFLOW}: job {name} has no timeout-minutes")
     runs = [
         str(step.get("run", ""))
         for job in jobs.values()
-        for step in job.get("steps", [])
+        for step in (job or {}).get("steps") or []
     ]
     if not any("make check" in run for run in runs):
         return Result(ID, FAIL, f"{WORKFLOW}: no step runs `make check`")

@@ -52,3 +52,37 @@ def test_ensure_level_dry_run_writes_nothing(tmp_path: Path):
         == f"would raise {CONFIG_FILE} level 1 -> 2"
     )
     assert load_config(tmp_path).level == 1
+
+
+def test_ensure_level_adds_a_level_line_when_the_contract_table_has_none(
+    tmp_path: Path,
+):
+    (tmp_path / CONFIG_FILE).write_text(
+        "[contract]\n\n[docs]\nignore_references = []\n"
+    )
+    assert (
+        ensure_level(tmp_path, 1, dry_run=False)
+        == f"raised   {CONFIG_FILE} level 0 -> 1"
+    )
+    cfg = load_config(tmp_path)
+    assert cfg.level == 1
+    assert cfg.ignore_references == ()
+
+
+def test_ensure_level_adds_the_contract_table_when_absent(tmp_path: Path):
+    (tmp_path / CONFIG_FILE).write_text('[docs]\nignore_references = ["runs/"]\n')
+    ensure_level(tmp_path, 2, dry_run=False)
+    assert load_config(tmp_path) == Config(level=2, ignore_references=("runs/",))
+
+
+def test_ensure_level_ignores_a_level_key_in_another_table(tmp_path: Path):
+    (tmp_path / CONFIG_FILE).write_text("[other]\nlevel = 5\n\n[contract]\nlevel = 1\n")
+    ensure_level(tmp_path, 2, dry_run=False)
+    assert load_config(tmp_path).level == 2
+    assert "[other]\nlevel = 5\n" in (tmp_path / CONFIG_FILE).read_text()
+
+
+def test_ensure_level_preserves_a_trailing_comment_on_the_level_line(tmp_path: Path):
+    (tmp_path / CONFIG_FILE).write_text("[contract]\nlevel = 1  # adopted\n")
+    ensure_level(tmp_path, 3, dry_run=False)
+    assert "level = 3  # adopted" in (tmp_path / CONFIG_FILE).read_text()

@@ -2326,7 +2326,8 @@ def check(repo: Repo) -> Result:
     missing = [path for path in listed if not repo.exists(path)]
     if missing:
         shown = ", ".join(f"`{p}`" for p in missing[:3])
-        return Result(ID, FAIL, f"authority list names paths that do not exist: {shown}")
+        more = f" (+{len(missing) - 3} more)" if len(missing) > 3 else ""
+        return Result(ID, FAIL, f"authority list names paths that do not exist: {shown}{more}")
     return Result(ID, PASS, f"all {len(listed)} documents in the authority list exist")
 
 
@@ -2863,6 +2864,7 @@ def test_adopt_then_fill_then_check_passes(python_repo: Path, capsys):
 def test_adopt_is_idempotent_and_never_overwrites(python_repo: Path, capsys):
     (python_repo / "Makefile").write_text("check:\n\techo mine\n")
     main(["adopt", str(python_repo)])
+    capsys.readouterr()  # drain the first run's output; the assertion below is about the second
     before = tree_hash(python_repo)
     assert (python_repo / "Makefile").read_text() == "check:\n\techo mine\n"
     main(["adopt", str(python_repo)])
@@ -2963,7 +2965,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"agentify: {exc}", file=sys.stderr)
         return 2
     if args.command == "check":
-        return cmd_check(repo, args.level or max_level(), args.json)
+        level = args.level if args.level is not None else max_level()
+        return cmd_check(repo, level, args.json)
     if args.command == "adopt":
         return cmd_adopt(repo, args.level, args.dry_run)
     return cmd_fill(repo)
@@ -3236,7 +3239,7 @@ Levels 2 and 3 (operable, self-healing) are specified in
 The generated step installs the published pin, which does not exist for the package under test. Replace the `Install the toolchain and the project` step and the `setup-python` step with:
 
 ```yaml
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v6   # if the run reports this tag missing, use the latest major
 
       - name: Install
         run: |

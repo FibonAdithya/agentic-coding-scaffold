@@ -1508,6 +1508,7 @@ def test_no_check_target_fails(tmp_path: Path):
         ("\t$(PYTHON) -m pytest || true\n", "'|| true'"),
         ("\t$(PYTHON) -m pytest || exit 0\n", "'|| exit 0'"),
         ("\t-$(PYTHON) -m pytest\n", "leading '-'"),
+        ("\t--$(PYTHON) -m pytest\n", "leading '-'"),
     ],
 )
 def test_swallowed_failures_are_rejected(tmp_path: Path, recipe: str, what: str):
@@ -1603,7 +1604,7 @@ ID = "L1.2"
 FORBIDDEN = (
     (re.compile(r"\|\|\s*true\b"), "'|| true'"),
     (re.compile(r"\|\|\s*exit\s+0\b"), "'|| exit 0'"),
-    (re.compile(r"^\t\s*-(?!-)"), "a leading '-' that ignores the exit status"),
+    (re.compile(r"^\t\s*-"), "a leading '-' that ignores the exit status"),
 )
 
 NO_ADAPTER_BODY = """\

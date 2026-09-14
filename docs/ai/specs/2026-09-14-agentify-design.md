@@ -372,3 +372,32 @@ the reference repo and the result recorded here:
 - The filer's dedup reads a bounded page of open issues. Past that, old
   signatures fall out and recur as duplicates. The filer logs when the page is
   full.
+
+## Amendments made while planning (2026-09-14)
+
+Decisions taken when the level 1 plan was written, recorded here so the spec
+and the plan agree. Each overrides the section it names.
+
+- **§3, dependencies.** Both shipped tests, `tests/test_contract.py` and
+  `tests/test_docs_references.py`, import agentify; the reference scanner is
+  one module, not duplicated into every repo. Only `bugreport.py` (level 3)
+  is stdlib-only. The converted repo's dependency on agentify is the pinned
+  git URL its generated CI installs.
+- **§3, adopt's edit rule.** `.agentify.toml` is owned by adopt: written if
+  absent, its `level` raised if lower than requested, never lowered. It is
+  the third in-place edit alongside `.gitignore` and the `[tool.ruff]` block.
+- **§3, `fill`.** Scans only the files adopt writes (`AGENTS.md`,
+  `README.md`, `Makefile`, `.github/workflows/ci.yml`), so the agentify repo's
+  own template sources do not appear in its worklist.
+- **§1, L1.2.** For Python repos the gate item also requires
+  `tests/test_contract.py` to exist, since the self-check is what makes the
+  gate re-run the contract. L1.2 and L1.3 fail while a fill marker remains
+  in their file, as L1.1 does.
+- **§1, L1.4.** Adopt writes a minimal `README.md` if none exists, so the
+  generated router's authority list resolves on a fresh repo. L1.6 also
+  writes `docs/ai/specs/.gitkeep` and `docs/ai/plans/.gitkeep`.
+- **§2, environment.** Development and CI use uv-managed Python 3.12
+  (`uv venv --python 3.12`); the host's system Python is 3.10. The
+  integration test needs `uv` on PATH and fails, not skips, without it.
+- **§5, integration.** The generated `make check` runs in a fresh uv venv
+  with agentify installed from the local checkout, not from the pin.

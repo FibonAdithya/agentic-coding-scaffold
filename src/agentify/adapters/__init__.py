@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from agentify.adapters.base import Adapter
+from agentify.adapters.python import PythonAdapter
 
-ADAPTERS: list[Adapter] = []
+ADAPTERS: list[Adapter] = [PythonAdapter()]
 
 
 def detect_adapter(root: Path) -> Adapter | None:

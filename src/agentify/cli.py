@@ -27,13 +27,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--level",
         type=int,
         default=None,
+        choices=range(1, max_level() + 1),
         help=f"1..{max_level()} (default: highest known)",
     )
     check.add_argument("--json", action="store_true", help="machine-readable output")
 
     adopt = sub.add_parser("adopt", help="write the missing files; never overwrites")
     adopt.add_argument("repo", nargs="?", default=".")
-    adopt.add_argument("--level", type=int, default=1)
+    adopt.add_argument(
+        "--level", type=int, default=1, choices=range(1, max_level() + 1)
+    )
     adopt.add_argument("--dry-run", action="store_true")
 
     fill = sub.add_parser("fill", help="list the <<FILL>> markers left to write")

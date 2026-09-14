@@ -58,7 +58,14 @@ def max_level() -> int:
     return max((item.level for item in registry()), default=1)
 
 
+def _check_level_in_range(level: int) -> None:
+    top = max_level()
+    if not 1 <= level <= top:
+        raise ValueError(f"level must be 1..{top}")
+
+
 def run_checks(repo: Repo, level: int) -> list[Result]:
+    _check_level_in_range(level)
     results: list[Result] = []
     for item in registry():
         if item.level > level:
@@ -75,6 +82,7 @@ def run_checks(repo: Repo, level: int) -> list[Result]:
 
 
 def run_adopt(repo: Repo, level: int, dry_run: bool) -> list[str]:
+    _check_level_in_range(level)
     actions: list[str] = []
     for item in registry():
         if item.level > level:

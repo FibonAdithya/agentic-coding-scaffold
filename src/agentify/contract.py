@@ -32,7 +32,9 @@ class Item:
 
 def registry() -> list[Item]:
     """Every contract item, in id order. Imported lazily: items import this module."""
-    return []
+    from agentify.checks import l1_1_router
+
+    return [l1_1_router.ITEM]
 
 
 def max_level() -> int:

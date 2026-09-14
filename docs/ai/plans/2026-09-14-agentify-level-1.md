@@ -2090,6 +2090,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from agentify.config import load_config
+from agentify.markdown import lines_outside_fences
 from agentify.repo import Repo
 
 EXTENSIONS = r"md|py|ya?ml|json|toml|txt|sh|cfg|ini|csv|npy"
@@ -2116,18 +2117,6 @@ class Unresolved:
     reason: str
 
 
-def _lines_outside_fences(text: str) -> list[tuple[int, str]]:
-    out: list[tuple[int, str]] = []
-    in_fence = False
-    for number, line in enumerate(text.splitlines(), 1):
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if not in_fence:
-            out.append((number, line))
-    return out
-
-
 def section(text: str, heading: str) -> str:
     """The lines under `## {heading}` up to the next `## `, or empty."""
     lines = text.splitlines()
@@ -2148,7 +2137,7 @@ def slug(heading: str) -> str:
 
 
 def anchors(markdown: str) -> set[str]:
-    return {slug(line.lstrip("#")) for _, line in _lines_outside_fences(markdown) if line.startswith("#")}
+    return {slug(line.lstrip("#")) for _, line in lines_outside_fences(markdown) if line.startswith("#")}
 
 
 def authoritative_docs(repo: Repo) -> list[Path]:
@@ -2184,7 +2173,7 @@ def scan_docs(repo: Repo) -> list[Unresolved]:
     found: list[Unresolved] = []
     for doc in authoritative_docs(repo):
         rel = str(doc.relative_to(repo.root))
-        for number, line in _lines_outside_fences(doc.read_text(encoding="utf-8")):
+        for number, line in lines_outside_fences(doc.read_text(encoding="utf-8")):
             for match in REFERENCE.finditer(line):
                 if any(match["path"].startswith(prefix) for prefix in ignore):
                     continue

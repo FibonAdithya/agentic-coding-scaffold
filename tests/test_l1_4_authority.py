@@ -40,6 +40,17 @@ def test_every_listed_path_must_exist(tmp_path: Path):
     assert r.status == PASS and "4 documents" in r.reason
 
 
+def test_a_path_that_escapes_the_repo_root_fails_even_if_it_exists(tmp_path: Path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    (tmp_path / "outside.md").write_text("# Outside\n")
+    (root / "AGENTS.md").write_text(
+        "## Source of truth, in order\n\n1. `../outside.md`.\n"
+    )
+    r = l1_4_authority.check(Repo.open(root))
+    assert r.status == FAIL and "`../outside.md`" in r.reason
+
+
 def test_generate_writes_readme_once(python_repo: Path):
     repo = Repo.open(python_repo)
     assert l1_4_authority.generate(repo, dry_run=False) == ["wrote    README.md"]

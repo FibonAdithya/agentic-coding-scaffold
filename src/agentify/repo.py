@@ -30,6 +30,15 @@ class Repo:
     def exists(self, rel: str) -> bool:
         return (self.root / rel).exists()
 
+    def contains(self, rel: str) -> bool:
+        """True if `rel`, resolved against root, is root or under it.
+
+        A doc reference like `../outside.md` can resolve to something that
+        exists on disk without being part of this repository at all.
+        """
+        target = (self.root / rel).resolve()
+        return target == self.root or self.root in target.parents
+
     def read(self, rel: str) -> str | None:
         target = self.root / rel
         if not target.is_file():

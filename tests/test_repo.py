@@ -19,6 +19,19 @@ def test_open_rejects_a_file(tmp_path: Path):
         Repo.open(f)
 
 
+def test_contains_is_true_for_root_and_paths_under_it_false_for_escapes(
+    tmp_path: Path,
+):
+    repo = Repo.open(tmp_path)
+    assert repo.contains(".")
+    assert repo.contains("a/b.md")
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a/b.md").write_text("")
+    assert repo.contains("a/b.md")
+    assert not repo.contains("../outside.md")
+    assert not repo.contains("a/../../outside.md")
+
+
 def test_read_returns_none_for_missing_and_text_for_present(tmp_path: Path):
     repo = Repo.open(tmp_path)
     assert repo.read("a.txt") is None

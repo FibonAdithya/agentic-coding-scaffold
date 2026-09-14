@@ -108,6 +108,19 @@ def test_scan_reports_each_failure_kind(tmp_path: Path):
     ]
 
 
+def test_reference_escaping_the_repo_root_is_unresolved_even_if_it_exists(
+    tmp_path: Path,
+):
+    root = tmp_path / "repo"
+    root.mkdir()
+    (tmp_path / "outside.md").write_text("# Outside\n")
+    (root / "AGENTS.md").write_text("# x\n\nSee `../outside.md`.\n")
+    found = scan_docs(Repo.open(root))
+    assert found == [
+        Unresolved("AGENTS.md", 3, "../outside.md", "reference escapes the repository")
+    ]
+
+
 def test_symbols_are_only_checked_with_an_adapter(tmp_path: Path):
     (tmp_path / "AGENTS.md").write_text("`x.py::whatever`\n")
     (tmp_path / "x.py").write_text("")

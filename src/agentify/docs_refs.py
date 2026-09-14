@@ -90,7 +90,10 @@ def _resolve(repo: Repo, match: re.Match[str]) -> str | None:
     """The reason a reference fails to resolve, or None if it resolves."""
     if match["line"]:
         return LINE_REASON
-    target = repo.path(match["path"])
+    path = match["path"]
+    if not repo.contains(path):
+        return "reference escapes the repository"
+    target = repo.path(path)
     if not target.exists():
         return "path does not exist"
     if match["anchor"] and (

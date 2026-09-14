@@ -18,7 +18,9 @@ def check(repo: Repo) -> Result:
     listed = [m["path"] for m in REFERENCE.finditer(section(text, HEADING))]
     if not listed:
         return Result(ID, FAIL, f'AGENTS.md "## {HEADING}" names no documents')
-    missing = [path for path in listed if not repo.exists(path)]
+    missing = [
+        path for path in listed if not repo.contains(path) or not repo.exists(path)
+    ]
     if missing:
         shown = ", ".join(f"`{p}`" for p in missing[:3])
         more = f" (+{len(missing) - 3} more)" if len(missing) > 3 else ""

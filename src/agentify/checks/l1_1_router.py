@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from agentify.contract import FAIL, PASS, Item, Result
+from agentify.markdown import lines_outside_fences
 from agentify.repo import Repo, write_if_missing
 from agentify.templates import render
 
@@ -19,7 +20,11 @@ FILL = "<<FILL"
 
 
 def headings(text: str) -> list[str]:
-    return [line[3:].strip() for line in text.splitlines() if line.startswith("## ")]
+    return [
+        line[3:].strip()
+        for _, line in lines_outside_fences(text)
+        if line.startswith("## ")
+    ]
 
 
 def missing_in_order(found: list[str], required: tuple[str, ...]) -> str | None:

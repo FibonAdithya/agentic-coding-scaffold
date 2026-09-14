@@ -84,3 +84,10 @@ def test_generate_writes_router_with_markers_then_passes_once_filled(python_repo
         "exists   AGENTS.md",
         "exists   CLAUDE.md",
     ]
+
+
+def test_headings_inside_fenced_code_do_not_count(tmp_path: Path):
+    text = GOOD.replace("## Invariants\nx\n", "") + "\n```\n## Invariants\n```\n"
+    (tmp_path / "AGENTS.md").write_text(text)
+    r = l1_1_router.check(Repo.open(tmp_path))
+    assert r.status == FAIL and '"## Invariants" missing or out of order' in r.reason

@@ -15,7 +15,7 @@ ID = "L1.2"
 FORBIDDEN = (
     (re.compile(r"\|\|\s*true\b"), "'|| true'"),
     (re.compile(r"\|\|\s*exit\s+0\b"), "'|| exit 0'"),
-    (re.compile(r"^\t\s*-(?!-)"), "a leading '-' that ignores the exit status"),
+    (re.compile(r"^\t\s*-"), "a leading '-' that ignores the exit status"),
 )
 
 NO_ADAPTER_BODY = """\

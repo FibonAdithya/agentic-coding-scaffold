@@ -31,6 +31,7 @@ def test_no_check_target_fails(tmp_path: Path):
         ("\t$(PYTHON) -m pytest || true\n", "'|| true'"),
         ("\t$(PYTHON) -m pytest || exit 0\n", "'|| exit 0'"),
         ("\t-$(PYTHON) -m pytest\n", "leading '-'"),
+        ("\t--$(PYTHON) -m pytest\n", "leading '-'"),
     ],
 )
 def test_swallowed_failures_are_rejected(tmp_path: Path, recipe: str, what: str):

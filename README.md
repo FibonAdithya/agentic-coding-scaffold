@@ -32,5 +32,10 @@ The full list, with what each check enforces, is `CONTRACT.md`.
 
     make check
 
+This repo installs itself with `uv pip install -e '.[dev]'` (see Install
+above), not with the generated `requirements-dev.txt` -- that file exists
+here only so this repo's own contract self-check has one, the same as any
+converted repo's.
+
 Levels 2 and 3 (operable, self-healing) are specified in
 `docs/ai/specs/2026-09-14-agentify-design.md` and not yet built.

@@ -34,6 +34,7 @@ def test_adopt_then_fill_then_check_passes(python_repo: Path, capsys):
     assert main(["adopt", str(python_repo)]) == 0
     out = capsys.readouterr().out
     assert "wrote    AGENTS.md" in out and "wrote    tests/test_contract.py" in out
+    assert "wrote    requirements-dev.txt" in out
     assert main(["check", str(python_repo)]) == 1
     out = capsys.readouterr().out
     assert "L1.1  fail" in out and "L1.2  pass" in out and "L1.3  pass" in out

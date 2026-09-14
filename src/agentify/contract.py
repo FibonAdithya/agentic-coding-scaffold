@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from agentify import AGENTIFY_PIN
 from agentify.config import ensure_level
-from agentify.repo import Repo, write_if_missing
+from agentify.repo import Repo, append_text, write_if_missing
 from agentify.templates import render
 
 PASS = "pass"
@@ -86,4 +87,21 @@ def run_adopt(repo: Repo, level: int, dry_run: bool) -> list[str]:
                 repo, "tests/test_contract.py", render("test_contract.py.tmpl"), dry_run
             )
         )
+        actions.append(_ensure_requirements_dev(repo, dry_run))
     return actions
+
+
+def _ensure_requirements_dev(repo: Repo, dry_run: bool) -> str:
+    """A fourth in-place-edit exception (see AGENTS.md Invariant 1): the
+    converted repo must install agentify itself to run its own contract
+    self-check, so the pin is appended to an existing file rather than
+    silently skipped."""
+    rel = "requirements-dev.txt"
+    if not repo.path(rel).exists():
+        return write_if_missing(
+            repo, rel, render(rel, agentify_pin=AGENTIFY_PIN), dry_run
+        )
+    existing = repo.read(rel) or ""
+    if "agentify @" in existing:
+        return f"exists   {rel} (agentify pinned)"
+    return append_text(repo, rel, f"# agentify\n{AGENTIFY_PIN}\n", dry_run)

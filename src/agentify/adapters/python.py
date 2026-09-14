@@ -29,6 +29,9 @@ test:
 
 # `pip install -e .` only when there is a [project] table: a pyproject.toml
 # that holds tool config alone has nothing to install, and the attempt fails.
+# requirements-dev.txt pins ruff, pytest, and agentify itself (the contract
+# self-check imports it), so installing it is the single source of truth for
+# what the gate needs -- see contract.py::run_adopt and AGENTS.md Invariant 1.
 CI_SETUP_STEPS = r"""      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -37,7 +40,7 @@ CI_SETUP_STEPS = r"""      - uses: actions/setup-python@v5
       - name: Install the toolchain and the project
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ruff pytest "@@agentify_pin@@"
+          python -m pip install -r requirements-dev.txt
           if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
           if grep -q '^\[project\]' pyproject.toml 2>/dev/null; then python -m pip install -e .; fi
 """
@@ -65,7 +68,10 @@ class PythonAdapter:
         return GATE_BODY
 
     def ci_setup_steps(self, agentify_pin: str) -> str:
-        return CI_SETUP_STEPS.replace("@@agentify_pin@@", agentify_pin)
+        # agentify_pin is unused now that requirements-dev.txt carries the
+        # pin; kept so the Adapter protocol's signature is unchanged.
+        del agentify_pin
+        return CI_SETUP_STEPS
 
     def ignore_patterns(self) -> list[str]:
         return ["__pycache__/", ".venv/", ".ruff_cache/", ".pytest_cache/"]

@@ -98,9 +98,7 @@ def test_generate_for_python_writes_a_workflow_that_passes(python_repo: Path):
         "wrote    .github/workflows/ci.yml"
     ]
     text = (python_repo / l1_3_ci.WORKFLOW).read_text()
-    assert (
-        "agentify @ git+https://github.com/FibonAdithya/agentic-coding@v0.1.0" in text
-    )
+    assert "-r requirements-dev.txt" in text
     assert l1_3_ci.check(repo).status == PASS
     assert l1_3_ci.generate(repo, dry_run=False) == [
         "exists   .github/workflows/ci.yml"

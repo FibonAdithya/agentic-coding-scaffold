@@ -21,9 +21,9 @@ An agent can read the repo and know what is true.
 
 ## What adopt writes for level 1
 
-Only files that do not exist. The three exceptions, all append-or-raise and
-never rewrite: `.gitignore`, the ruff block in `pyproject.toml`, and the level
-in `.agentify.toml`.
+Only files that do not exist. The four exceptions, all append-or-raise and
+never rewrite: `.gitignore`, the ruff block in `pyproject.toml`, the agentify
+pin in `requirements-dev.txt`, and the level in `.agentify.toml`.
 
 | File | From |
 |---|---|
@@ -36,6 +36,7 @@ in `.agentify.toml`.
 | `.agentify.toml` | `src/agentify/templates/agentify.toml` |
 | `tests/test_contract.py` (Python) | `src/agentify/templates/test_contract.py.tmpl` |
 | `tests/test_docs_references.py` (Python) | `src/agentify/templates/test_docs_references.py.tmpl` |
+| `requirements-dev.txt` (Python) | `src/agentify/templates/requirements-dev.txt` |
 
 ## Fill markers
 

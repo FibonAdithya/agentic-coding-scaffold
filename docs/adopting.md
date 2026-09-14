@@ -5,6 +5,14 @@
     # write each marked section, then
     agentify check <repo>
 
+For Python repos, `adopt` also writes `requirements-dev.txt`; install it
+before running the gate:
+
+    pip install -r requirements-dev.txt
+
+That installs the linter, the test runner, and agentify, which the contract
+self-check imports.
+
 `adopt` writes only what is missing and prints one line per file: `wrote`,
 `exists`, `appended` (the `.gitignore` block and the ruff block in
 `pyproject.toml`), `raised` (the level in `.agentify.toml`), or `skipped`.

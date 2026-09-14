@@ -9,6 +9,11 @@ authoritative, what must not be broken, and what needs a human.
 
 ## Checks
 
+    pip install -r requirements-dev.txt
+
+That installs the linter, the test runner, and agentify, which the contract
+self-check imports.
+
     make check
 
 That is the gate CI runs. It must be green before a change is done.

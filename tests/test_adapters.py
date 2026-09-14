@@ -23,7 +23,7 @@ def test_gate_body_defines_check_and_uses_tabs():
 
 def test_ci_setup_steps_install_the_pin_and_are_indented_six_spaces():
     steps = PythonAdapter().ci_setup_steps("agentify @ git+https://x@v9")
-    assert '"agentify @ git+https://x@v9"' in steps
+    assert "-r requirements-dev.txt" in steps
     assert all(line.startswith("      ") for line in steps.splitlines() if line.strip())
     assert "@@" not in steps
 

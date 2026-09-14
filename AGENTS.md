@@ -38,8 +38,9 @@ These are silent until violated. Nothing in the test suite catches them, and
 each is easy to break while believing you are making progress.
 
 1. **Adopt never overwrites.** The only in-place edits are appending to
-   `.gitignore`, appending a ruff block to `pyproject.toml`, and raising the
-   level in `.agentify.toml`. A generator that "fixes" an existing file has
+   `.gitignore`, appending a ruff block to `pyproject.toml`, appending the
+   agentify pin to `requirements-dev.txt`, and raising the level in
+   `.agentify.toml`. A generator that "fixes" an existing file has
    changed a repo someone else owns. `tests/test_cli.py` checks this for the
    files it knows about; a new generator is not covered until its test is.
 2. **Item ids are stable.** `L1.1` through `L1.7` are named in `CONTRACT.md`,

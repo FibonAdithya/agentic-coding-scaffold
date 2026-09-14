@@ -2162,7 +2162,7 @@ def _resolve(repo: Repo, match: re.Match[str]) -> str | None:
     target = repo.path(match["path"])
     if not target.exists():
         return "path does not exist"
-    if match["anchor"] and (target.suffix != ".md" or match["anchor"] not in anchors(target.read_text(encoding="utf-8"))):
+    if match["anchor"] and (target.suffix != ".md" or match["anchor"] not in anchors(target.read_text(encoding="utf-8", errors="replace"))):
         return "anchor not found"
     if match["symbol"] and repo.adapter is not None and not repo.adapter.resolve_symbol(target, match["symbol"]):
         return "symbol not found"
@@ -2174,7 +2174,7 @@ def scan_docs(repo: Repo) -> list[Unresolved]:
     found: list[Unresolved] = []
     for doc in authoritative_docs(repo):
         rel = str(doc.relative_to(repo.root))
-        for number, line in lines_outside_fences(doc.read_text(encoding="utf-8")):
+        for number, line in lines_outside_fences(doc.read_text(encoding="utf-8", errors="replace")):
             for match in REFERENCE.finditer(line):
                 if any(match["path"].startswith(prefix) for prefix in ignore):
                     continue

@@ -2418,7 +2418,10 @@ def test_python_templates_are_lint_and_format_clean(tmp_path):
 
     from agentify.templates import _template_dir
 
-    for tmpl in sorted(_template_dir().glob("*.py.tmpl")):
+    templates = sorted(_template_dir().glob("*.py.tmpl"))
+    # Pin the set so a renamed or deleted template cannot turn this into a vacuous pass.
+    assert [t.name for t in templates] == ["test_contract.py.tmpl", "test_docs_references.py.tmpl"]
+    for tmpl in templates:
         target = tmp_path / tmpl.name.removesuffix(".tmpl")
         shutil.copy(tmpl, target)
         for args in (["check", "--select", "E,F,I,W,UP", "--ignore", "E501"], ["format", "--check"]):

@@ -16,6 +16,10 @@ writes the missing pieces. If you are an agent, read `AGENTS.md` first.
     agentify adopt <repo> [--level N]    # write the missing files; never overwrites
     agentify fill  <repo>                # list the <<FILL>> markers left to write
 
+`check` runs `make -n check` on the target repo (with a 30 s timeout), which
+lets GNU make expand `$(shell …)` forms in that repo's Makefile before any
+recipe runs; point `check` only at repositories you have read.
+
 Run `adopt`, then `fill`, then write the marked sections by hand following
 `docs/adopting.md`, then `check`. The converted repo keeps
 `tests/test_contract.py`, so its own `make check` re-runs the contract from

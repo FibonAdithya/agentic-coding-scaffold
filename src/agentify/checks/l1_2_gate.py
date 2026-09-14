@@ -12,6 +12,11 @@ from agentify.templates import render
 
 ID = "L1.2"
 
+# `make -n check` expands $(shell ...) forms while parsing the Makefile, even
+# though -n never runs a recipe: a target repo's Makefile can hang or run
+# arbitrarily long code before we ever get to the exit code. Bound it.
+MAKE_TIMEOUT_S = 30
+
 FORBIDDEN = (
     (re.compile(r"\|\|\s*true\b"), "'|| true'"),
     (re.compile(r"\|\|\s*exit\s+0\b"), "'|| exit 0'"),
@@ -65,9 +70,16 @@ def check(repo: Repo) -> Result:
             )
     if shutil.which("make") is None:
         return Result(ID, FAIL, "make is not installed")
-    proc = subprocess.run(
-        ["make", "-n", "check"], cwd=repo.root, capture_output=True, text=True
-    )
+    try:
+        proc = subprocess.run(
+            ["make", "-n", "check"],
+            cwd=repo.root,
+            capture_output=True,
+            text=True,
+            timeout=MAKE_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return Result(ID, FAIL, "`make -n check` did not finish within 30 s")
     if proc.returncode != 0:
         return Result(ID, FAIL, f"`make -n check` failed: {proc.stderr.strip()[:200]}")
     return Result(

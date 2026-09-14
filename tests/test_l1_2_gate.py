@@ -65,6 +65,18 @@ def test_unresolvable_target_fails_via_make_n(tmp_path: Path):
     assert r.status == FAIL and "make -n check" in r.reason
 
 
+def test_make_n_check_timeout_fails_cleanly(tmp_path: Path, monkeypatch):
+    # `make -n check` expands $(shell ...) while parsing, before any recipe
+    # runs, so a slow shell call in the Makefile itself can hang the check.
+    monkeypatch.setattr(l1_2_gate, "MAKE_TIMEOUT_S", 1)
+    (tmp_path / "Makefile").write_text(
+        "SLOW := $(shell sleep 60)\ncheck:\n\techo done\n"
+    )
+    r = l1_2_gate.check(Repo.open(tmp_path))
+    assert r.status == FAIL
+    assert "`make -n check` did not finish within 30 s" in r.reason
+
+
 def test_generate_for_python_writes_makefile_and_ruff_config(python_repo: Path):
     repo = Repo.open(python_repo)
     actions = l1_2_gate.generate(repo, dry_run=False)

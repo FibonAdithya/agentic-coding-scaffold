@@ -66,5 +66,11 @@ def test_adopt_dry_run_writes_nothing(python_repo: Path, capsys):
     assert tree_hash(python_repo) == before
 
 
+def test_fill_exits_1_on_an_unterminated_marker(tmp_path: Path, capsys):
+    (tmp_path / "AGENTS.md").write_text("# x\n\n<<FILL: no closing\n")
+    assert main(["fill", str(tmp_path)]) == 1
+    assert "unterminated marker: add the closing >>" in capsys.readouterr().out
+
+
 def test_missing_repo_path_is_an_error(tmp_path: Path):
     assert main(["check", str(tmp_path / "nope")]) == 2

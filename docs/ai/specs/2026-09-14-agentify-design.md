@@ -401,3 +401,62 @@ and the plan agree. Each overrides the section it names.
   integration test needs `uv` on PATH and fails, not skips, without it.
 - **§5, integration.** The generated `make check` runs in a fresh uv venv
   with agentify installed from the local checkout, not from the pin.
+
+## Amendments made while implementing (2026-09-14)
+
+Facts the level 1 code establishes that the sections above do not say. Each
+overrides the section it names. Sources: the execution ledger's rulings and
+the final whole-branch review.
+
+- **§3, placeholders.** The template syntax is `@@name@@`, never braces,
+  because workflow files contain `${{ }}`. The placeholder set is
+  `@@project_name@@`, `@@body@@`, `@@setup_steps@@`, `@@level@@`, and
+  `@@agentify_pin@@`.
+- **§2, adapter protocol.** Methods are `detect`, `gate_body`,
+  `ci_setup_steps`, `ignore_patterns`, `resolve_symbol`. The spec's
+  `gate_recipe` became `gate_body`; `test_ids_from_junit` waits for level 3.
+- **§1, L1.1.** The `CLAUDE.md` comparison strips backticks, so the template's
+  ``See `AGENTS.md`.`` satisfies "exactly `See AGENTS.md.`". Headings inside
+  fenced code blocks do not count (shared helper
+  `src/agentify/markdown.py`).
+- **§1, L1.2.** Any leading `-` on a recipe line is forbidden; GNU make
+  ignores errors on `--` too. The check runs `make -n check` with a 30 s
+  timeout, and `make -n` still expands `$(shell ...)` in the target
+  Makefile: `check` executes code from the repository it is pointed at. The
+  forbidden-form list is a lint, not a proof. The generated ruff block
+  narrows `include` to code files because ruff 0.16 lints and formats code
+  blocks inside Markdown by default.
+- **§1, L1.3.** Null `jobs:` or `steps:` values and a non-mapping document
+  fail with a reason rather than raising.
+- **§1, L1.4.** Also fails when the *Source of truth* section names no
+  documents, and when a named path escapes the repository root.
+- **§1, L1.5.** References that escape the repository root (`..`) are
+  unresolved. Files are read with `errors="replace"`, so a bad byte cannot
+  crash the gate. Symbols are checked only with an adapter.
+- **§1, L1.7.** The required set includes `.agentify/`. Matching is textual:
+  `.venv` does not satisfy `.venv/`.
+- **§3, adopt's files at level 1.** Also `README.md`, `.agentify.toml`,
+  `docs/ai/specs/.gitkeep`, `docs/ai/plans/.gitkeep`, and for Python
+  `requirements-dev.txt` holding `ruff`, `pytest`, and the agentify pin. That
+  file is how the pinned dev dependency reaches the converted repo; the
+  generated CI installs from it, and the generated README says to install
+  it before `make check`. In-place edits are therefore four: `.gitignore`,
+  the ruff block in `pyproject.toml`, the level in `.agentify.toml`, and the
+  pin line in an existing `requirements-dev.txt`.
+- **§3, adopt's output vocabulary.** `wrote`, `exists`, `appended`,
+  `raised`, `skipped`. Check reasons do not name a template; the
+  "What adopt writes" table in `CONTRACT.md` does.
+- **§3, levels.** `--level` accepts only `1..max_level()`; `check` defaults
+  to the highest implemented level and reports pass or fail for the level
+  requested. "Reports the highest level fully passed" is deferred until a
+  second level exists.
+- **§3, `fill`.** An unterminated `<<FILL:` is reported as a marker, so
+  `fill` and the checks agree; the colon is required so prose that mentions
+  the `<<FILL>>` syntax is not a marker.
+- **§2, fixtures.** There is no `tests/fixtures/` directory; fixtures are
+  built in `tests/conftest.py` from `tmp_path`, and broken cases are inline
+  strings in each check's test module.
+- **§5, integration.** Two integration tests: one installs agentify from the
+  local checkout, one installs from the generated `requirements-dev.txt`
+  with the pin line swapped for the local checkout, since the tag does not
+  exist until the repo is published.

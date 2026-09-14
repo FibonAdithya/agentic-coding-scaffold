@@ -32,8 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v6   # if the run reports this tag missing, use the latest major
+      - uses: astral-sh/setup-uv@v6   # pinned major; check the action's releases page before changing
 
+      # tests/test_integration.py builds its own throwaway fixture venv at
+      # Python 3.12 regardless of matrix.python below -- that is on purpose,
+      # not an oversight: it tests the generated gate, not this matrix leg.
       - name: Install
         run: |
           uv venv --python ${{ matrix.python }} .venv

@@ -49,7 +49,11 @@ class Repo:
 def write_if_missing(repo: Repo, rel: str, content: str, dry_run: bool) -> str:
     """Create `rel` with `content` unless it exists. Never overwrites."""
     target = repo.root / rel
-    if target.exists():
+    if target.exists() or target.is_symlink():
+        # A dangling symlink is not "exists" under Path.exists() (which
+        # follows the link), but writing through it would create a file at
+        # whatever it points to -- outside our control and possibly outside
+        # the repo. Treat it as an existing, owned file: never overwritten.
         return f"exists   {rel}"
     if dry_run:
         return f"would write {rel}"

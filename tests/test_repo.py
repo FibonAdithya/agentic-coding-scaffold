@@ -52,6 +52,18 @@ def test_write_if_missing_writes_once_and_reports(tmp_path: Path):
     assert (tmp_path / "d/f.txt").read_text() == "one\n"
 
 
+def test_write_if_missing_treats_a_dangling_symlink_as_existing(tmp_path: Path):
+    repo = Repo.open(tmp_path)
+    link = tmp_path / "d" / "f.txt"
+    link.parent.mkdir()
+    link.symlink_to(tmp_path / "nowhere")
+    assert (
+        write_if_missing(repo, "d/f.txt", "one\n", dry_run=False) == "exists   d/f.txt"
+    )
+    assert link.is_symlink()
+    assert not (tmp_path / "nowhere").exists()
+
+
 def test_write_if_missing_dry_run_writes_nothing(tmp_path: Path):
     repo = Repo.open(tmp_path)
     assert write_if_missing(repo, "f.txt", "x", dry_run=True) == "would write f.txt"

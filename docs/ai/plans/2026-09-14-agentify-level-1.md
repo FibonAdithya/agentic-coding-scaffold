@@ -1616,6 +1616,9 @@ check:
 RUFF_BLOCK = """\
 [tool.ruff]
 line-length = 88
+# Ruff 0.16+ lints and formats Python code blocks inside *.md by default. Docs
+# hold illustrative snippets; the gate is about code.
+include = ["*.py", "*.pyi", "*.pyw", "*.ipynb", "**/pyproject.toml"]
 
 [tool.ruff.lint]
 # pyflakes (F) catches real defects; E, W, I, UP are mechanical. E501 is the

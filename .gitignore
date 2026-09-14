@@ -5,3 +5,9 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# agentify: agent scratch state and tool caches
+.superpowers/
+.claude/worktrees/
+.claude/settings.local.json
+.agentify/

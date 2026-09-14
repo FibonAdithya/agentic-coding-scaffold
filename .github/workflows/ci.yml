@@ -1,0 +1,44 @@
+# Runs the gate on every pull request and on every push to main.
+#
+# The push-to-main trigger is not redundant with the PR one: a direct push
+# reaches main without a PR and would otherwise arrive with nothing having
+# run. It is also the trigger the self-healing loop files bugs from.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: this workflow reads code and runs tests. Nothing it does
+# needs a token that can write.
+permissions:
+  contents: read
+
+# A second push to the same ref makes the in-flight run answer a question
+# nobody is asking any more.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6   # if the run reports this tag missing, use the latest major
+
+      - name: Install
+        run: |
+          uv venv --python ${{ matrix.python }} .venv
+          uv pip install --python .venv/bin/python -e '.[dev]'
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run the gate
+        run: make check

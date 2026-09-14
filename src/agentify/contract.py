@@ -38,6 +38,8 @@ def registry() -> list[Item]:
         l1_3_ci,
         l1_4_authority,
         l1_5_references,
+        l1_6_notes,
+        l1_7_ignore,
     )
 
     return [
@@ -46,6 +48,8 @@ def registry() -> list[Item]:
         l1_3_ci.ITEM,
         l1_4_authority.ITEM,
         l1_5_references.ITEM,
+        l1_6_notes.ITEM,
+        l1_7_ignore.ITEM,
     ]
 
 

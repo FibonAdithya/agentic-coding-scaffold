@@ -119,3 +119,9 @@ def test_ignore_references_prefixes_are_exempt(tmp_path: Path):
     assert len(scan_docs(Repo.open(tmp_path))) == 1
     (tmp_path / ".agentify.toml").write_text('[docs]\nignore_references = ["runs/"]\n')
     assert scan_docs(Repo.open(tmp_path)) == []
+
+
+def test_non_utf8_docs_do_not_crash_the_scan(tmp_path: Path):
+    (tmp_path / "AGENTS.md").write_bytes(b"# x\n\nSee `GUIDE.md#setup` and \xff\xfe.\n")
+    (tmp_path / "GUIDE.md").write_bytes(b"# Guide\n\n## Setup\n\xff\n")
+    assert scan_docs(Repo.open(tmp_path)) == []

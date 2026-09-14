@@ -69,7 +69,13 @@ def anchors(markdown: str) -> set[str]:
 def authoritative_docs(repo: Repo) -> list[Path]:
     """Root docs plus every .md the router's source-of-truth section names outside docs/ai/."""
     docs = [repo.path(name) for name in ROOT_DOCS if repo.exists(name)]
-    listed = section(repo.read("AGENTS.md") or "", "Source of truth, in order")
+    agents_path = repo.path("AGENTS.md")
+    agents_text = (
+        agents_path.read_text(encoding="utf-8", errors="replace")
+        if agents_path.exists()
+        else ""
+    )
+    listed = section(agents_text, "Source of truth, in order")
     for match in REFERENCE.finditer(listed):
         path = match["path"]
         if not path.endswith(".md") or path.startswith(NOTES_DIR):
@@ -89,7 +95,8 @@ def _resolve(repo: Repo, match: re.Match[str]) -> str | None:
         return "path does not exist"
     if match["anchor"] and (
         target.suffix != ".md"
-        or match["anchor"] not in anchors(target.read_text(encoding="utf-8"))
+        or match["anchor"]
+        not in anchors(target.read_text(encoding="utf-8", errors="replace"))
     ):
         return "anchor not found"
     if (
@@ -106,7 +113,9 @@ def scan_docs(repo: Repo) -> list[Unresolved]:
     found: list[Unresolved] = []
     for doc in authoritative_docs(repo):
         rel = str(doc.relative_to(repo.root))
-        for number, line in lines_outside_fences(doc.read_text(encoding="utf-8")):
+        for number, line in lines_outside_fences(
+            doc.read_text(encoding="utf-8", errors="replace")
+        ):
             for match in REFERENCE.finditer(line):
                 if any(match["path"].startswith(prefix) for prefix in ignore):
                     continue

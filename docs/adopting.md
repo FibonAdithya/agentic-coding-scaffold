@@ -108,13 +108,24 @@ exist, so create all three once:
     gh label create auto-bug       --color B60205 --description "Filed by CI on a red main; routes to the owner"
     gh label create keep-branch    --color 0E8A16 --description "Keep this PR's branch after merge"
 
+On an organisation-owned repository, `github.repository_owner` is the
+org login and cannot be assigned; edit `ASSIGNEE` in the generated
+`.github/workflows/notify.yml` to a user login.
+
 ### Branch hygiene
 
-From then on a merged PR's head branch is deleted unless the PR carries
-`keep-branch`, the branch matches a pattern in the workflow's
-`KEEP_PATTERNS`, another open PR is based on it, or commits were pushed
-after the merge. Edit `KEEP_PATTERNS` in the generated file for long-lived
-branches; adopt never rewrites it.
+A branch is finished only when a PR from it merged and the branch still
+points at that PR's head commit. Branches merged without a PR are never
+deleted by the sweep; delete those by hand. Every other branch is kept,
+for one of these reasons: it carries the `keep-branch` label itself, a
+merged PR from it carries `keep-branch`, it matches a pattern in the
+workflow's `KEEP_PATTERNS`, its head is on a fork, an open PR is based on
+it or is from it, or it has moved past the commit its merged PR pointed
+at. Edit `KEEP_PATTERNS` in the generated file for long-lived branches;
+adopt never rewrites it.
+
+The workflow's concurrency group keeps one pending run, so two PRs merged
+within seconds may leave the middle one's branch for the next sweep.
 
 For a repository that already has a backlog, run the sweep by hand. The
 first run lists; nothing is deleted until you pass `apply`:

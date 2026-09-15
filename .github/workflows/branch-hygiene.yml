@@ -2,18 +2,16 @@
 #
 # GitHub's delete-on-merge setting deletes the head branch the moment a PR
 # merges, with no way to say "this one continues". This workflow applies a
-# rule instead. A branch is finished when its PR merged and nothing says it
-# lives on: no `keep-branch` label, no keep pattern, no open PR based on it,
-# no commit past the merged one, and it is this repository's own branch.
-# Every skip is printed with its reason.
+# rule instead. A branch is finished only when a PR from it merged and the
+# branch still points at that PR's head commit. Branches merged without a
+# PR are never deleted by the sweep; delete those by hand. No `keep-branch`
+# label, no keep pattern, no open PR based on it, and it is this
+# repository's own branch. Every skip is printed with its reason.
 #
 # Two triggers, one script:
 #   - a PR closing as merged: decide about that PR's head branch;
-#   - manual dispatch: sweep every branch already merged into the default
-#     branch. `apply` defaults to false, so the first run only lists.
-# The sweep also catches heads of squash- or rebase-merged PRs, which git
-# ancestry cannot see: a branch whose tip is still the commit its merged PR
-# had is finished too.
+#   - manual dispatch: sweep every branch whose tip is a merged PR's head.
+#     `apply` defaults to false, so the first run only lists.
 #
 # It is a rule and not a model judgement because the action is a deletion.
 name: branch-hygiene
@@ -120,10 +118,8 @@ jobs:
               reason="an open PR is based on it"
             elif grep -q "^$branch " <<<"$open_prs"; then
               reason="an open PR is from it"
-            elif [ "$EVENT" = workflow_dispatch ] \
-              && ! git merge-base --is-ancestor "$tip" "origin/$DEFAULT_BRANCH" \
-              && ! grep -q "^$branch $tip\$" <<<"$merged_tips"; then
-              reason="has commits not on $DEFAULT_BRANCH and no merged PR at its tip"
+            elif [ "$EVENT" = workflow_dispatch ] && ! grep -q "^$branch $tip\$" <<<"$merged_tips"; then
+              reason="no merged PR at its tip"
             fi
 
             if [ -n "$reason" ]; then

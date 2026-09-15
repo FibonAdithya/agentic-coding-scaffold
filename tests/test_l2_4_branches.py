@@ -125,3 +125,4 @@ def test_template_script_never_uses_a_blind_delete(tmp_path: Path):
     assert text.count("git/refs/heads/") == 1
     assert 'if [ "$APPLY" = true ]; then' in text
     assert "pull_request_target" not in text
+    assert "merge-base --is-ancestor" not in text

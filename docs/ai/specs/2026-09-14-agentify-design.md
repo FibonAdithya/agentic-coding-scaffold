@@ -521,13 +521,13 @@ delete-on-merge.
   a keep pattern listed in the workflow's `KEEP_PATTERNS` env, the head repo
   is not this repository, another open PR uses the branch as base, or the
   branch has moved past the merged commit. On `workflow_dispatch`: sweep every
-  remote branch fully contained in the default branch (`git branch -r
-  --merged`) through the same skips; an `apply` input defaulting to `false`
-  lists candidates without deleting. Every skip is printed with its reason.
+  remote branch whose tip equals a merged PR's head commit through the same
+  skips; an `apply` input defaulting to `false` lists candidates without
+  deleting. Every skip is printed with its reason.
   Permissions are exactly `contents: write` and `pull-requests: read`, on
   this workflow only. The check parses the file: `pull_request` trigger with
   type `closed`, `workflow_dispatch` present, never `pull_request_target`,
-  the permissions above and nothing more, every job has a timeout, some job
+  the permissions above and nothing more, every job has a timeout, every job
   `if` contains `merged == true`, and the text `keep-branch` appears. It is a
   rule, not a model judgement, because the action is a deletion; the label
   gives the author the same control without guessing.

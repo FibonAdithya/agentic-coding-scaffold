@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 from agentify.cli import main
-from agentify.contract import max_level
 from helpers import fill_all
 
 
@@ -22,9 +21,10 @@ def test_check_on_a_bare_repo_lists_every_item_and_exits_1(python_repo: Path, ca
         assert item in out
     # L1.5 passes vacuously: with no AGENTS.md or README.md there is nothing to scan.
     assert "L1.5  pass" in out
-    fail_rows = [line for line in out.splitlines() if " fail " in line]
-    assert len(fail_rows) >= 6
-    assert out.strip().endswith(f"level {max_level()}: FAIL ({len(fail_rows)} failing)")
+    # Every item except L1.5 fails on a bare repo. A task that adds an item
+    # updates this line: it is the record of what a bare repo is missing.
+    assert "L2.1  fail" in out
+    assert out.strip().endswith("level 2: FAIL (7 failing)")
 
 
 def test_check_json_output(python_repo: Path, capsys):

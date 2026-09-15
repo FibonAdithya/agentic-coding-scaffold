@@ -40,8 +40,10 @@ Adds `.github/workflows/notify.yml` (an issue filed with the router's label
 reaches the owner) and `.github/workflows/branch-hygiene.yml` (a merged
 branch is deleted when it is finished, and a manual run sweeps the backlog).
 Level 2 also checks that `make setup` exists and that any PR review bot reads
-`AGENTS.md` and cannot push. Three labels must exist on GitHub for the
-workflows to do anything; `docs/adopting.md#labels` creates them.
+`AGENTS.md` and cannot push. Three labels must exist on GitHub before the
+workflows are useful: without `agent-reported` and `auto-bug` nothing
+routes, and without `keep-branch` there is no way to opt a branch out
+before its first merge; `docs/adopting.md#labels` creates them.
 
 ## Development
 

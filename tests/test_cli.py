@@ -21,8 +21,9 @@ def test_check_on_a_bare_repo_lists_every_item_and_exits_1(python_repo: Path, ca
         assert item in out
     # L1.5 passes vacuously: with no AGENTS.md or README.md there is nothing to scan.
     assert "L1.5  pass" in out
-    # Every item except L1.5 fails on a bare repo. A task that adds an item
-    # updates this line: it is the record of what a bare repo is missing.
+    # Every item except L1.5 (nothing to scan) and L2.3 (no workflows, n/a)
+    # fails on a bare repo. A task that adds an item updates this line: it
+    # is the record of what a bare repo is missing.
     assert "L2.1  fail" in out
     assert "L2.2  fail" in out
     assert "L2.3  n/a" in out
@@ -149,5 +150,7 @@ def test_level_1_adopt_then_level_2_adopt_only_adds(python_repo: Path, capsys):
     capsys.readouterr()
     main(["adopt", str(python_repo), "--level", "2"])
     out = capsys.readouterr().out
+    assert "wrote    .github/workflows/notify.yml" in out
+    assert "wrote    .github/workflows/branch-hygiene.yml" in out
     assert out.count("wrote") == 2
     assert "raised   .agentify.toml level 1 -> 2" in out

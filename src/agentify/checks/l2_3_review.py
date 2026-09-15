@@ -55,6 +55,9 @@ def review_workflows(repo: Repo) -> list[tuple[str, dict[str, Any]]]:
 
 
 def _grants_contents_write(permissions: Any) -> bool:
+    """True for the mapping form and for the `write-all` shorthand, which grants every scope."""
+    if permissions == "write-all":
+        return True
     return isinstance(permissions, dict) and permissions.get("contents") == "write"
 
 

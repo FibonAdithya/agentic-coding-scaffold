@@ -82,6 +82,22 @@ def test_top_level_contents_write_fails(tmp_path: Path):
     assert r.status == FAIL and "contents: write" in r.reason
 
 
+def test_job_level_write_all_shorthand_fails(tmp_path: Path):
+    text = REVIEW.replace(
+        "    permissions:\n      contents: read\n      pull-requests: write\n      id-token: write\n",
+        "    permissions: write-all\n",
+    )
+    assert "permissions: write-all" in text
+    r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))
+    assert r.status == FAIL and "contents: write" in r.reason
+
+
+def test_top_level_write_all_shorthand_fails(tmp_path: Path):
+    text = REVIEW.replace("jobs:\n", "permissions: write-all\njobs:\n")
+    r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))
+    assert r.status == FAIL and "contents: write" in r.reason
+
+
 def test_prompt_that_does_not_mention_the_router_fails(tmp_path: Path):
     text = REVIEW.replace("Read AGENTS.md first. ", "")
     r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))

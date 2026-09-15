@@ -460,3 +460,9 @@ the final whole-branch review.
   local checkout, one installs from the generated `requirements-dev.txt`
   with the pin line swapped for the local checkout, since the tag does not
   exist until the repo is published.
+- **§1, L1.4 and L1.5 (2026-09-15).** References resolve against the citing
+  document's directory first, then the repository root, with the same
+  containment rule for both. A backticked `*.md` glob in the authority list
+  expands to every file it matches, for L1.4 (present when at least one
+  file matches) and for the set of documents L1.5 scans. Found by converting
+  wgan-synthetic, whose router lists `docs/datasets/*.md`.

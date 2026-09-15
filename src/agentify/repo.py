@@ -31,13 +31,13 @@ class Repo:
         return (self.root / rel).exists()
 
     def contains(self, rel: str) -> bool:
-        """True if `rel`, resolved against root, is root or under it.
+        """True if `rel`, resolved against the root, stays inside the repository."""
+        return self.contains_path(self.root / rel)
 
-        A doc reference like `../outside.md` can resolve to something that
-        exists on disk without being part of this repository at all.
-        """
-        target = (self.root / rel).resolve()
-        return target == self.root or self.root in target.parents
+    def contains_path(self, target: Path) -> bool:
+        """True if `target` (any path) resolves to the root or somewhere under it."""
+        resolved = target.resolve()
+        return resolved == self.root or self.root in resolved.parents
 
     def read(self, rel: str) -> str | None:
         target = self.root / rel

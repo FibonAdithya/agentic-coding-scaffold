@@ -58,3 +58,16 @@ def test_generate_writes_readme_once(python_repo: Path):
     assert text.startswith(f"# {python_repo.name}\n")
     assert "<<FILL:" in text and "`AGENTS.md`" in text
     assert l1_4_authority.generate(repo, dry_run=False) == ["exists   README.md"]
+
+
+def test_a_glob_is_present_when_it_matches_and_missing_when_it_does_not(tmp_path: Path):
+    (tmp_path / "AGENTS.md").write_text(
+        "## Source of truth, in order\n\n1. `docs/datasets/*.md`.\n"
+    )
+    r = l1_4_authority.check(Repo.open(tmp_path))
+    assert r.status == FAIL and "`docs/datasets/*.md`" in r.reason
+    (tmp_path / "docs/datasets").mkdir(parents=True)
+    (tmp_path / "docs/datasets/sift.md").write_text("")
+    (tmp_path / "docs/datasets/deep.md").write_text("")
+    r = l1_4_authority.check(Repo.open(tmp_path))
+    assert r.status == PASS and "2 documents" in r.reason

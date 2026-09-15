@@ -143,3 +143,61 @@ def test_non_utf8_docs_do_not_crash_the_scan(tmp_path: Path):
     (tmp_path / "AGENTS.md").write_bytes(b"# x\n\nSee `GUIDE.md#setup` and \xff\xfe.\n")
     (tmp_path / "GUIDE.md").write_bytes(b"# Guide\n\n## Setup\n\xff\n")
     assert scan_docs(Repo.open(tmp_path)) == []
+
+
+def test_references_resolve_relative_to_the_citing_document_first(tmp_path: Path):
+    (tmp_path / "AGENTS.md").write_text(
+        "## Source of truth, in order\n\n1. `docs/guide/GUIDE.md`.\n"
+    )
+    (tmp_path / "docs/guide/specs").mkdir(parents=True)
+    (tmp_path / "docs/guide/notes.md").write_text("# Top\n")
+    (tmp_path / "docs/guide/GUIDE.md").write_text(
+        "# Guide\n\nSee `specs/`, `notes.md#top`, and the root `README.md`.\n"
+    )
+    (tmp_path / "README.md").write_text("# r\n")
+    assert scan_docs(Repo.open(tmp_path)) == []
+
+
+def test_doc_relative_anchor_is_checked_against_the_doc_relative_target(tmp_path: Path):
+    (tmp_path / "AGENTS.md").write_text(
+        "## Source of truth, in order\n\n1. `docs/GUIDE.md`.\n"
+    )
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/notes.md").write_text("# Other\n")
+    (tmp_path / "notes.md").write_text("# Top\n")
+    (tmp_path / "docs/GUIDE.md").write_text("`notes.md#top`\n")
+    # docs/notes.md exists and wins over the root notes.md, and it lacks the anchor.
+    assert scan_docs(Repo.open(tmp_path)) == [
+        Unresolved("docs/GUIDE.md", 1, "notes.md#top", "anchor not found")
+    ]
+
+
+def test_doc_relative_escape_does_not_resolve(tmp_path: Path):
+    root = tmp_path / "repo"
+    (root / "docs").mkdir(parents=True)
+    (tmp_path / "outside.md").write_text("# out\n")
+    (root / "AGENTS.md").write_text(
+        "## Source of truth, in order\n\n1. `docs/GUIDE.md`.\n"
+    )
+    (root / "docs/GUIDE.md").write_text("`../../outside.md`\n")
+    found = scan_docs(Repo.open(root))
+    assert [u.ref for u in found] == ["../../outside.md"]
+    assert found[0].reason in (
+        "reference escapes the repository",
+        "path does not exist",
+    )
+
+
+def test_authoritative_docs_expands_md_globs_in_the_authority_list(tmp_path: Path):
+    (tmp_path / "AGENTS.md").write_text(
+        "## Source of truth, in order\n\n1. `docs/datasets/*.md`.\n2. `docs/ai/*.md`.\n"
+    )
+    (tmp_path / "docs/datasets").mkdir(parents=True)
+    (tmp_path / "docs/datasets/sift.md").write_text("")
+    (tmp_path / "docs/datasets/deep.md").write_text("")
+    (tmp_path / "docs/ai").mkdir()
+    (tmp_path / "docs/ai/README.md").write_text("")
+    names = [
+        str(p.relative_to(tmp_path)) for p in authoritative_docs(Repo.open(tmp_path))
+    ]
+    assert names == ["AGENTS.md", "docs/datasets/deep.md", "docs/datasets/sift.md"]

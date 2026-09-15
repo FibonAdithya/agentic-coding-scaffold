@@ -26,6 +26,12 @@ REFERENCE = re.compile(
     r"|::(?P<symbol>[A-Za-z_][A-Za-z0-9_.]*)"
     r"|:(?P<line>\d+(?:-\d+)?))?`"
 )
+# A backticked `*.md` glob in the authority list, e.g. `docs/datasets/*.md`.
+# Kept apart from REFERENCE, whose path class excludes `*`, so prose that
+# mentions a glob is never treated as a single path.
+GLOB_REFERENCE = re.compile(
+    r"`(?P<pattern>[A-Za-z0-9_.][A-Za-z0-9_./*-]*\*[A-Za-z0-9_./*-]*\.md)`"
+)
 ROOT_DOCS = ("AGENTS.md", "CLAUDE.md", "README.md")
 NOTES_DIR = "docs/ai/"
 LINE_REASON = "line-number citation; cite by #anchor or ::symbol"
@@ -68,8 +74,18 @@ def anchors(markdown: str) -> set[str]:
     }
 
 
+def expand_glob(repo: Repo, pattern: str) -> list[Path]:
+    """Files under the root matching a `*.md` glob, sorted; nothing outside docs/ai/ excluded here."""
+    return sorted(
+        p for p in repo.root.glob(pattern) if p.is_file() and repo.contains_path(p)
+    )
+
+
 def authoritative_docs(repo: Repo) -> list[Path]:
-    """Root docs plus every .md the router's source-of-truth section names outside docs/ai/."""
+    """Root docs plus every .md the router's source-of-truth section names outside docs/ai/.
+
+    A backticked `*.md` glob in that section expands to every file it matches.
+    """
     docs = [repo.path(name) for name in ROOT_DOCS if repo.exists(name)]
     agents_path = repo.path("AGENTS.md")
     agents_text = (
@@ -78,25 +94,47 @@ def authoritative_docs(repo: Repo) -> list[Path]:
         else ""
     )
     listed = section(agents_text, "Source of truth, in order")
+    candidates: list[Path] = []
     for match in REFERENCE.finditer(listed):
         path = match["path"]
-        if not path.endswith(".md") or path.startswith(NOTES_DIR):
+        if path.endswith(".md") and repo.contains(path):
+            candidates.append(repo.path(path))
+    for match in GLOB_REFERENCE.finditer(listed):
+        candidates.extend(expand_glob(repo, match["pattern"]))
+    for target in candidates:
+        rel = (
+            target.relative_to(repo.root).as_posix()
+            if repo.contains_path(target)
+            else ""
+        )
+        if rel.startswith(NOTES_DIR):
             continue
-        target = repo.path(path)
         if target.is_file() and target not in docs:
             docs.append(target)
     return docs
 
 
-def _resolve(repo: Repo, match: re.Match[str]) -> str | None:
+def _target(repo: Repo, doc: Path, path: str) -> Path | None:
+    """The file `path` names, tried relative to `doc`'s directory and then to the root.
+
+    Candidates that escape the repository are skipped, so a doc-relative `..`
+    can never reach outside; None means nothing inside the repository exists.
+    """
+    for candidate in (doc.parent / path, repo.root / path):
+        if repo.contains_path(candidate) and candidate.exists():
+            return candidate
+    return None
+
+
+def _resolve(repo: Repo, doc: Path, match: re.Match[str]) -> str | None:
     """The reason a reference fails to resolve, or None if it resolves."""
     if match["line"]:
         return LINE_REASON
     path = match["path"]
-    if not repo.contains(path):
-        return "reference escapes the repository"
-    target = repo.path(path)
-    if not target.exists():
+    target = _target(repo, doc, path)
+    if target is None:
+        if not repo.contains(path):
+            return "reference escapes the repository"
         return "path does not exist"
     if match["anchor"] and (
         target.suffix != ".md"
@@ -124,7 +162,7 @@ def scan_docs(repo: Repo) -> list[Unresolved]:
             for match in REFERENCE.finditer(line):
                 if any(match["path"].startswith(prefix) for prefix in ignore):
                     continue
-                reason = _resolve(repo, match)
+                reason = _resolve(repo, doc, match)
                 if reason is not None:
                     found.append(
                         Unresolved(rel, number, match.group(0).strip("`"), reason)

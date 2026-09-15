@@ -11,4 +11,4 @@ level = 1
 # checkout: build products, downloaded data, run directories. `.claude/` and
 # `.agentify/` are agent scratch state (see CONTRACT.md's L1.7 row); they are
 # gitignored and absent from a clean checkout, but CONTRACT.md names them.
-ignore_references = [".claude/", ".agentify/"]
+ignore_references = [".superpowers/", ".claude/", ".agentify/"]

@@ -43,6 +43,7 @@ def registry() -> list[Item]:
         l1_7_ignore,
         l2_1_setup,
         l2_2_notify,
+        l2_3_review,
     )
 
     return [
@@ -55,6 +56,7 @@ def registry() -> list[Item]:
         l1_7_ignore.ITEM,
         l2_1_setup.ITEM,
         l2_2_notify.ITEM,
+        l2_3_review.ITEM,
     ]
 
 

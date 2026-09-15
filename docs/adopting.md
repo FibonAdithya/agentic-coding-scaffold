@@ -88,3 +88,57 @@ clean checkout (run directories, downloaded data), list its prefix in
 [docs]
 ignore_references = ["runs/", "data/"]
 ```
+
+## Level 2
+
+    agentify adopt <repo> --level 2
+
+writes two workflows and raises the level in `.agentify.toml`. Three things
+then need a person, because they are repository state and not files.
+
+### Labels
+
+The router tells agents to file with `--label agent-reported`;
+`.github/workflows/notify.yml` routes that label and `auto-bug` to the
+owner; `.github/workflows/branch-hygiene.yml` keeps a branch whose PR
+carries `keep-branch`. `gh issue create --label X` fails when `X` does not
+exist, so create all three once:
+
+    gh label create agent-reported --color D93F0B --description "Filed by a coding agent; routes to the owner"
+    gh label create auto-bug       --color B60205 --description "Filed by CI on a red main; routes to the owner"
+    gh label create keep-branch    --color 0E8A16 --description "Keep this PR's branch after merge"
+
+### Branch hygiene
+
+From then on a merged PR's head branch is deleted unless the PR carries
+`keep-branch`, the branch matches a pattern in the workflow's
+`KEEP_PATTERNS`, another open PR is based on it, or commits were pushed
+after the merge. Edit `KEEP_PATTERNS` in the generated file for long-lived
+branches; adopt never rewrites it.
+
+For a repository that already has a backlog, run the sweep by hand. The
+first run lists; nothing is deleted until you pass `apply`:
+
+    gh workflow run branch-hygiene.yml
+    gh run watch            # read the `keep` and `would delete` lines
+    gh workflow run branch-hygiene.yml -f apply=true
+
+Do not enable GitHub's own "automatically delete head branches" setting
+alongside this; that setting deletes first and asks nothing.
+
+### Review bots
+
+L2.3 checks review workflows but does not write one, because a review bot is
+a model choice. The reference is wgan-synthetic
+(github.com/FibonAdithya/wgan-synthetic), whose workflows directory holds
+claude-review.yml and docs-review.yml: copy one, keep contents read-only,
+and keep "Read AGENTS.md first" in the prompt. The check fails on any
+`contents: write`, because a confidently wrong rewrite must cost a comment
+and never a commit.
+
+### A hand-written Makefile
+
+L2.1 needs a `setup` target. Copy the one the Python adapter writes
+(`src/agentify/adapters/python.py::GATE_BODY`; it creates `.venv` if absent
+and installs the requirements files), then add a row to the router's *Where
+to look* table whose second column says `make setup`.

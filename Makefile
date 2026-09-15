@@ -7,7 +7,7 @@
 PYTHON ?= python
 RUFF ?= ruff
 
-.PHONY: check lint format-check format test
+.PHONY: check lint format-check format test setup
 
 check: lint format-check test
 
@@ -23,3 +23,11 @@ format:
 
 test:
 	$(PYTHON) -m pytest
+
+# One idempotent entry point for a fresh checkout; mirrors README "Install".
+# The venv rule fires only when .venv is absent.
+setup: .venv/bin/python
+	uv pip install --python .venv/bin/python -e '.[dev]'
+
+.venv/bin/python:
+	uv venv --python 3.12 .venv

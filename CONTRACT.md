@@ -1,9 +1,9 @@
 # The agentify contract
 
 A repository meets a level when every item at that level and below passes
-`agentify check`. Each item names the module whose check enforces it. Levels
-2 and 3 are specified in `docs/ai/specs/2026-09-14-agentify-design.md` and
-are not yet implemented; `agentify check` reports only what exists.
+`agentify check`. Each item names the module whose check enforces it. Level
+3 is specified in `docs/ai/specs/2026-09-14-agentify-design.md` and is not
+yet implemented; `agentify check` reports only what exists.
 
 ## Level 1 — legible
 
@@ -18,6 +18,28 @@ An agent can read the repo and know what is true.
 | L1.5 References resolve | In `AGENTS.md`, `CLAUDE.md`, `README.md`, and every `.md` the authority section names or globs outside `docs/ai/`: every backticked path exists (resolved against the citing document's directory first, then the repository root), every `#anchor` is a heading in its target, every `::symbol` is defined there (Python only), and no citation uses a line number. Prefixes under `[docs] ignore_references` in `.agentify.toml` are exempt. | `src/agentify/checks/l1_5_references.py::check`, scanner in `src/agentify/docs_refs.py::scan_docs` |
 | L1.6 AI notes quarantined | `docs/ai/README.md` exists and contains the phrase "not the source of truth". | `src/agentify/checks/l1_6_notes.py::check` |
 | L1.7 Ignore hygiene | `.gitignore` lists `.superpowers/`, `.claude/worktrees/`, `.claude/settings.local.json`, `.agentify/`, plus the language adapter's cache directories. Patterns are matched textually; `.venv` does not satisfy `.venv/`. | `src/agentify/checks/l1_7_ignore.py::check` |
+
+## Level 2 — operable
+
+An agent can set up, run, and report on the project, and the repository
+stays tidy without a person sweeping it.
+
+| Id | Requirement | Enforced by |
+|---|---|---|
+| L2.1 Setup | The `Makefile` has a `setup` target that is idempotent (every step skips what exists), and the router's *Where to look* table names `make setup`. `make -n setup` exits 0 within 30 s. The Python gate body carries the target from level 1 on; a hand-written Makefile adds it by copying from the template. | `src/agentify/checks/l2_1_setup.py::check` |
+| L2.2 Bug channel | The router's *What requires a human* section shows the filing command with `--label <name>`. `.github/workflows/notify.yml` triggers on issues opened, has top-level permissions exactly `issues: write`, a timeout on every job, and a job gated on that label. The labels themselves are repository state: create them as `docs/adopting.md#labels` says. | `src/agentify/checks/l2_2_notify.py::check` |
+| L2.3 Review bots | Optional. Every workflow under `.github/workflows/` that triggers on `pull_request` and has a step with a `prompt` input must grant no `contents: write` at any level, have a timeout on every job, and tell the model to read `AGENTS.md`. None present reports n/a. Nothing is generated. | `src/agentify/checks/l2_3_review.py::check` |
+| L2.4 Branch hygiene | `.github/workflows/branch-hygiene.yml` triggers on `pull_request` type `closed` and on `workflow_dispatch`, never on `pull_request_target`; permissions are exactly `contents: write` and `pull-requests: read`; every job has a timeout; a job is gated on `merged == true`; the `keep-branch` label is honoured. The script deletes a merged head branch unless a rule says it lives on, and the dispatch form sweeps already-merged branches with `apply` off by default. | `src/agentify/checks/l2_4_branches.py::check` |
+
+## What adopt writes for level 2
+
+| File | From |
+|---|---|
+| `.github/workflows/notify.yml` | `src/agentify/templates/notify.yml` |
+| `.github/workflows/branch-hygiene.yml` | `src/agentify/templates/branch-hygiene.yml` |
+
+Nothing else. The setup target is in the level 1 Makefile, and review bots
+are copied by hand from the reference named in `docs/adopting.md#review-bots`.
 
 ## What adopt writes for level 1
 

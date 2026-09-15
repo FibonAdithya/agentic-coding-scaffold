@@ -102,6 +102,7 @@ nobody.
 |---|---|
 | The contract and what each check enforces | `CONTRACT.md` |
 | Run the three commands | `README.md` |
+| Set up a development environment | `make setup` (a target in `Makefile`) |
 | Convert a repo and fill its markers | `docs/adopting.md` |
 | What a check does | `src/agentify/checks/`, one module per item |
 | What adopt writes | `src/agentify/templates/`, `src/agentify/contract.py::run_adopt` |

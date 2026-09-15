@@ -1,0 +1,43 @@
+# Makes a filed bug reach a human.
+#
+# GitHub does not notify an account about its own token's actions. An agent
+# filing with the owner's token, or a workflow filing with GITHUB_TOKEN,
+# produces an issue nobody is told about. Verified on gpu-queue-management:
+# a runner-filed issue produced no notification while CI failures on the
+# same repository notified normally. A *different actor* touching the issue
+# is what notifies, and that is all this workflow is: github-actions[bot]
+# assigns the owner.
+#
+# Not gated on any autofix switch or throttle. Those switch off dispatch;
+# a bug nobody may auto-fix is still a bug somebody needs to know about.
+name: notify
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    # `agent-reported` is an agent's prose (the label AGENTS.md tells it to
+    # use); `auto-bug` is structural evidence from CI (level 3). Labels are
+    # the gate because only someone with triage permission can set them:
+    # GitHub silently drops labels from anyone else, so a stranger opening
+    # an issue cannot route themselves into the owner's notifications.
+    if: >-
+      contains(github.event.issue.labels.*.name, 'agent-reported')
+      || contains(github.event.issue.labels.*.name, 'auto-bug')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Assign the owner so the filing reaches them
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          gh issue edit "$NUMBER" --repo "$REPO" --add-assignee "$OWNER"
+          echo "assigned $OWNER to #$NUMBER"

@@ -32,6 +32,17 @@ then on.
 Python projects `tests/test_contract.py` and `tests/test_docs_references.py`.
 The full list, with what each check enforces, is `CONTRACT.md`.
 
+## What a converted repo gets at level 2
+
+    agentify adopt <repo> --level 2
+
+Adds `.github/workflows/notify.yml` (an issue filed with the router's label
+reaches the owner) and `.github/workflows/branch-hygiene.yml` (a merged
+branch is deleted when it is finished, and a manual run sweeps the backlog).
+Level 2 also checks that `make setup` exists and that any PR review bot reads
+`AGENTS.md` and cannot push. Three labels must exist on GitHub for the
+workflows to do anything; `docs/adopting.md#labels` creates them.
+
 ## Development
 
     make check
@@ -41,5 +52,5 @@ above), not with the generated `requirements-dev.txt` -- that file exists
 here only so this repo's own contract self-check has one, the same as any
 converted repo's.
 
-Levels 2 and 3 (operable, self-healing) are specified in
+Level 3 (self-healing) is specified in
 `docs/ai/specs/2026-09-14-agentify-design.md` and not yet built.

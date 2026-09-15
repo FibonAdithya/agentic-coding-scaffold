@@ -2,10 +2,8 @@
 #
 # GitHub does not notify an account about its own token's actions. An agent
 # filing with the owner's token, or a workflow filing with GITHUB_TOKEN,
-# produces an issue nobody is told about. Verified on gpu-queue-management:
-# a runner-filed issue produced no notification while CI failures on the
-# same repository notified normally. A *different actor* touching the issue
-# is what notifies, and that is all this workflow is: github-actions[bot]
+# produces an issue nobody is told about. A *different actor* touching the
+# issue is what notifies, and that is all this workflow is: github-actions[bot]
 # assigns the owner.
 #
 # Not gated on any autofix switch or throttle. Those switch off dispatch;
@@ -19,13 +17,19 @@ on:
 permissions:
   issues: write
 
+env:
+  # On an organisation-owned repository set this to a user login; an
+  # organisation cannot be assigned.
+  ASSIGNEE: ${{ github.repository_owner }}
+
 jobs:
   assign:
     # `agent-reported` is an agent's prose (the label AGENTS.md tells it to
-    # use); `auto-bug` is structural evidence from CI (level 3). Labels are
-    # the gate because only someone with triage permission can set them:
-    # GitHub silently drops labels from anyone else, so a stranger opening
-    # an issue cannot route themselves into the owner's notifications.
+    # use); `auto-bug` is filed by automation (CI) rather than by a person.
+    # Labels are the gate because only someone with triage permission can
+    # set them: GitHub silently drops labels from anyone else, so a
+    # stranger opening an issue cannot route themselves into the owner's
+    # notifications.
     if: >-
       contains(github.event.issue.labels.*.name, 'agent-reported')
       || contains(github.event.issue.labels.*.name, 'auto-bug')
@@ -37,7 +41,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.issue.number }}
-          OWNER: ${{ github.repository_owner }}
         run: |
-          gh issue edit "$NUMBER" --repo "$REPO" --add-assignee "$OWNER"
-          echo "assigned $OWNER to #$NUMBER"
+          gh issue edit "$NUMBER" --repo "$REPO" --add-assignee "$ASSIGNEE"
+          echo "assigned $ASSIGNEE to #$NUMBER"

@@ -144,8 +144,9 @@ a model choice. The reference is wgan-synthetic
 (github.com/FibonAdithya/wgan-synthetic), whose workflows directory holds
 claude-review.yml and docs-review.yml: copy one, keep contents read-only,
 and keep "Read AGENTS.md first" in the prompt. The check fails on any
-`contents: write`, because a confidently wrong rewrite must cost a comment
-and never a commit.
+`contents: write`, on a workflow that declares no `permissions` at all (the
+default token may write), and on a `pull_request_target` trigger, because a
+confidently wrong rewrite must cost a comment and never a commit.
 
 ### A hand-written Makefile
 

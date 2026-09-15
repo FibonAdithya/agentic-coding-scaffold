@@ -98,6 +98,50 @@ def test_top_level_write_all_shorthand_fails(tmp_path: Path):
     assert r.status == FAIL and "contents: write" in r.reason
 
 
+def test_review_workflow_without_any_permissions_block_fails(tmp_path: Path):
+    text = REVIEW.replace(
+        "    permissions:\n      contents: read\n      pull-requests: write\n      id-token: write\n",
+        "",
+    )
+    r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))
+    assert r.status == FAIL and "permissions" in r.reason
+
+
+def test_top_level_read_only_permissions_with_no_job_block_passes(tmp_path: Path):
+    text = REVIEW.replace(
+        "    permissions:\n      contents: read\n      pull-requests: write\n      id-token: write\n",
+        "",
+    )
+    text = text.replace(
+        "jobs:\n",
+        "permissions:\n  contents: read\n  pull-requests: write\njobs:\n",
+    )
+    r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))
+    assert r.status == PASS
+
+
+def test_read_all_shorthand_passes(tmp_path: Path):
+    text = REVIEW.replace(
+        "    permissions:\n      contents: read\n      pull-requests: write\n      id-token: write\n",
+        "",
+    )
+    text = text.replace("jobs:\n", "permissions: read-all\njobs:\n")
+    r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))
+    assert r.status == PASS
+
+
+def test_pull_request_target_review_workflow_fails(tmp_path: Path):
+    text = REVIEW.replace("  pull_request:\n", "  pull_request_target:\n")
+    assert [
+        path
+        for path, _ in l2_3_review.review_workflows(
+            write(tmp_path, **{"review.yml": text})
+        )
+    ] == [".github/workflows/review.yml"]
+    r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))
+    assert r.status == FAIL and "pull_request_target" in r.reason
+
+
 def test_prompt_that_does_not_mention_the_router_fails(tmp_path: Path):
     text = REVIEW.replace("Read AGENTS.md first. ", "")
     r = l2_3_review.check(write(tmp_path, **{"review.yml": text}))

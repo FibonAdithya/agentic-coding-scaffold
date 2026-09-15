@@ -49,7 +49,9 @@ def review_workflows(repo: Repo) -> list[tuple[str, dict[str, Any]]]:
             raise WorkflowError(f"{rel}: not valid YAML: {exc}") from exc
         if not isinstance(workflow, dict):
             raise WorkflowError(f"{rel}: not a YAML mapping")
-        if "pull_request" in triggers(workflow) and _prompts(workflow):
+        if {"pull_request", "pull_request_target"} & triggers(
+            workflow
+        ).keys() and _prompts(workflow):
             found.append((rel, workflow))
     return found
 
@@ -69,16 +71,36 @@ def check(repo: Repo) -> Result:
     if not workflows:
         return Result(ID, NA, "no pull_request workflow with a prompt step")
     for rel, workflow in workflows:
-        if _grants_contents_write(workflow.get("permissions")):
+        if "pull_request_target" in triggers(workflow):
+            return Result(
+                ID,
+                FAIL,
+                f"{rel}: review bots must never trigger on pull_request_target "
+                "(write token plus secrets on fork PRs)",
+            )
+        top_permissions = workflow.get("permissions")
+        if _grants_contents_write(top_permissions):
             return Result(
                 ID, FAIL, f"{rel}: top-level permissions grant contents: write"
             )
-        for name, job in (workflow.get("jobs") or {}).items():
+        jobs = workflow.get("jobs") or {}
+        for name, job in jobs.items():
             job = job or {}
             if _grants_contents_write(job.get("permissions")):
                 return Result(ID, FAIL, f"{rel}: job {name} grants contents: write")
             if "timeout-minutes" not in job:
                 return Result(ID, FAIL, f"{rel}: job {name} has no timeout-minutes")
+        top_declared = "permissions" in workflow
+        every_job_declared = bool(jobs) and all(
+            "permissions" in (job or {}) for job in jobs.values()
+        )
+        if not top_declared and not every_job_declared:
+            return Result(
+                ID,
+                FAIL,
+                f"{rel}: no permissions declared anywhere; "
+                "add permissions: {contents: read, pull-requests: write}",
+            )
         if not all("AGENTS.md" in prompt for prompt in _prompts(workflow)):
             return Result(
                 ID, FAIL, f"{rel}: a prompt does not tell the model to read AGENTS.md"

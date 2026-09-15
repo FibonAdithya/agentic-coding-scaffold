@@ -506,12 +506,14 @@ delete-on-merge.
 - **§1, L2.3 Review bots.** File-name agnostic, because the reference repo
   names its workflows `claude-review.yml` and `docs-review.yml`. The check
   scans every workflow under `.github/workflows/` that triggers on
-  `pull_request` and has a step with a `prompt:` input. For each: no
-  `contents: write` at top level or on any job, and the prompt mentions
-  `AGENTS.md`. `id-token: write` is allowed; the action cannot mint its
-  credentials without it. No matching workflow reports *n/a*. There is no
-  generator; the runbook points at wgan-synthetic's two workflows as the
-  copyable reference.
+  `pull_request` or `pull_request_target` and has a step with a `prompt:`
+  input. For each: no `contents: write` at top level or on any job, and the
+  prompt mentions `AGENTS.md`. `id-token: write` is allowed; the action
+  cannot mint its credentials without it. A `pull_request_target` review
+  workflow fails outright; a workflow with no `permissions` declaration at
+  all fails, because the default token may write. No matching workflow
+  reports *n/a*. There is no generator; the runbook points at
+  wgan-synthetic's two workflows as the copyable reference.
 - **§1, L2.4 Branch hygiene (new item, ruled by the owner 2026-09-15).**
   Adopt writes `.github/workflows/branch-hygiene.yml`. Two triggers, one
   script. On `pull_request` type `closed` with `merged == true`: delete the

@@ -24,7 +24,8 @@ def test_check_on_a_bare_repo_lists_every_item_and_exits_1(python_repo: Path, ca
     # Every item except L1.5 fails on a bare repo. A task that adds an item
     # updates this line: it is the record of what a bare repo is missing.
     assert "L2.1  fail" in out
-    assert out.strip().endswith("level 2: FAIL (7 failing)")
+    assert "L2.2  fail" in out
+    assert out.strip().endswith("level 2: FAIL (8 failing)")
 
 
 def test_check_json_output(python_repo: Path, capsys):

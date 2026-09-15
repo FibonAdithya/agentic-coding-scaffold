@@ -37,6 +37,7 @@ def test_all_templates_are_present():
         "agentify.toml",
         "ci.yml",
         "docs-ai-README.md",
+        "notify.yml",
         "requirements-dev.txt",
         "test_contract.py.tmpl",
         "test_docs_references.py.tmpl",

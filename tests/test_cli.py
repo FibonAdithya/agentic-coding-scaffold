@@ -117,3 +117,37 @@ def test_check_ignores_a_declared_level_above_the_maximum(
     (tmp_path / ".agentify.toml").write_text("[contract]\nlevel = 9\n")
     assert main(["check", str(tmp_path)]) == 0
     assert "level 2:" in capsys.readouterr().out
+
+
+def test_adopt_at_level_2_writes_the_two_workflows_and_passes(
+    python_repo: Path, capsys
+):
+    assert main(["adopt", str(python_repo), "--level", "2"]) == 0
+    out = capsys.readouterr().out
+    assert "wrote    .github/workflows/notify.yml" in out
+    assert "wrote    .github/workflows/branch-hygiene.yml" in out
+    fill_all(python_repo)
+    assert main(["check", str(python_repo)]) == 0
+    out = capsys.readouterr().out
+    assert "level 2: PASS" in out
+    assert "L2.3  n/a" in out
+
+
+def test_adopt_at_level_2_is_idempotent(python_repo: Path, capsys):
+    main(["adopt", str(python_repo), "--level", "2"])
+    capsys.readouterr()  # drain the first run's output; the assertion below is about the second
+    fill_all(python_repo)
+    before = tree_hash(python_repo)
+    main(["adopt", str(python_repo), "--level", "2"])
+    out = capsys.readouterr().out
+    assert "wrote" not in out and "appended" not in out
+    assert tree_hash(python_repo) == before
+
+
+def test_level_1_adopt_then_level_2_adopt_only_adds(python_repo: Path, capsys):
+    main(["adopt", str(python_repo)])
+    capsys.readouterr()
+    main(["adopt", str(python_repo), "--level", "2"])
+    out = capsys.readouterr().out
+    assert out.count("wrote") == 2
+    assert "raised   .agentify.toml level 1 -> 2" in out

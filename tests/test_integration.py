@@ -2,7 +2,7 @@
 
 Everything else in the suite checks that generated files parse. This checks
 that they run: ruff lints the generated tests, pytest runs the contract
-self-check and the docs-reference test inside a fresh venv that has only
+self-check at level 2 and the docs-reference test inside a fresh venv that has only
 what the generated CI would install.
 """
 
@@ -32,7 +32,7 @@ def test_generated_gate_runs_green(python_repo: Path):
     assert uv, (
         "uv is required: it builds the fixture's venv (https://docs.astral.sh/uv/)"
     )
-    run_adopt(Repo.open(python_repo), level=1, dry_run=False)
+    run_adopt(Repo.open(python_repo), level=2, dry_run=False)
     fill_all(python_repo)
 
     venv = python_repo / ".venv"
@@ -73,7 +73,7 @@ def test_generated_gate_runs_green_from_requirements_dev_only(python_repo: Path)
     assert uv, (
         "uv is required: it builds the fixture's venv (https://docs.astral.sh/uv/)"
     )
-    run_adopt(Repo.open(python_repo), level=1, dry_run=False)
+    run_adopt(Repo.open(python_repo), level=2, dry_run=False)
     fill_all(python_repo)
 
     req_dev = python_repo / "requirements-dev.txt"

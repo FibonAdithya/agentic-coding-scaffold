@@ -49,10 +49,20 @@ def check(repo: Repo) -> Result:
         )
     jobs = workflow.get("jobs") or {}
     for name, job in jobs.items():
-        if "timeout-minutes" not in (job or {}):
+        job = job or {}
+        if "timeout-minutes" not in job:
             return Result(ID, FAIL, f"{WORKFLOW}: job {name} has no timeout-minutes")
-    if not any(MERGED_GATE in str((job or {}).get("if", "")) for job in jobs.values()):
-        return Result(ID, FAIL, f"{WORKFLOW}: no job is gated on `{MERGED_GATE}`")
+        if "permissions" in job:
+            return Result(
+                ID,
+                FAIL,
+                f"{WORKFLOW}: job {name} declares permissions; this workflow's "
+                "permissions are set at the top level only",
+            )
+        if MERGED_GATE not in str(job.get("if", "")):
+            return Result(
+                ID, FAIL, f"{WORKFLOW}: job {name} is not gated on `{MERGED_GATE}`"
+            )
     if KEEP_LABEL not in text:
         return Result(ID, FAIL, f"{WORKFLOW}: does not honour the `{KEEP_LABEL}` label")
     return Result(

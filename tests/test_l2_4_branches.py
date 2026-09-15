@@ -83,6 +83,26 @@ def test_each_required_property_is_enforced(tmp_path: Path, mutation, expected):
     assert r.status == FAIL and expected in r.reason
 
 
+def test_job_level_permissions_override_fails(tmp_path: Path):
+    text = GOOD.replace(
+        "  prune:\n    if:", "  prune:\n    permissions: write-all\n    if:"
+    )
+    r = l2_4_branches.check(write(tmp_path, text))
+    assert r.status == FAIL and "permissions" in r.reason
+
+
+def test_second_ungated_job_fails(tmp_path: Path):
+    text = GOOD + (
+        "  other:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    timeout-minutes: 5\n"
+        "    steps:\n"
+        "      - run: echo other\n"
+    )
+    r = l2_4_branches.check(write(tmp_path, text))
+    assert r.status == FAIL and "other" in r.reason and "merged == true" in r.reason
+
+
 def test_invalid_yaml_fails_cleanly(tmp_path: Path):
     r = l2_4_branches.check(write(tmp_path, "on: [\n"))
     assert r.status == FAIL and "not valid YAML" in r.reason

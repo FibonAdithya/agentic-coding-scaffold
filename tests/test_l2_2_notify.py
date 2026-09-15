@@ -95,6 +95,14 @@ def test_each_required_property_is_enforced(tmp_path: Path, mutation, expected):
     assert r.status == FAIL and expected in r.reason
 
 
+def test_job_level_permissions_override_fails(tmp_path: Path):
+    text = GOOD.replace(
+        "  assign:\n    if:", "  assign:\n    permissions: write-all\n    if:"
+    )
+    r = l2_2_notify.check(write(tmp_path, text))
+    assert r.status == FAIL and "permissions" in r.reason
+
+
 def test_issues_trigger_without_types_is_accepted(tmp_path: Path):
     text = GOOD.replace("  issues:\n    types: [opened]\n", "  issues:\n")
     assert l2_2_notify.check(write(tmp_path, text)).status == PASS

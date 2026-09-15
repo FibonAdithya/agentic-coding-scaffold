@@ -56,8 +56,16 @@ def check(repo: Repo) -> Result:
         )
     jobs = workflow.get("jobs") or {}
     for name, job in jobs.items():
-        if "timeout-minutes" not in (job or {}):
+        job = job or {}
+        if "timeout-minutes" not in job:
             return Result(ID, FAIL, f"{WORKFLOW}: job {name} has no timeout-minutes")
+        if "permissions" in job:
+            return Result(
+                ID,
+                FAIL,
+                f"{WORKFLOW}: job {name} declares permissions; this workflow's "
+                "permissions are set at the top level only",
+            )
     gates = [str((job or {}).get("if", "")) for job in jobs.values()]
     if not any(label in gate for gate in gates):
         return Result(

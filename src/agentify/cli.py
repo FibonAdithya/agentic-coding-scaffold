@@ -29,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         choices=range(1, max_level() + 1),
-        help=f"1..{max_level()} (default: the level .agentify.toml declares, else 1)",
+        help=f"1..{max_level()} (default: the level .agentify.toml declares, else the highest known)",
     )
     check.add_argument("--json", action="store_true", help="machine-readable output")
 
@@ -73,20 +73,12 @@ def cmd_fill(repo: Repo) -> int:
 
 
 def _default_level(repo: Repo) -> int:
-    """The level .agentify.toml declares, when it is one this agentify knows.
-    For repos without .agentify.toml (declared=0), default to 1. For repos
-    with .agentify.toml but level > max_level(), clamp to max_level()."""
+    """The level .agentify.toml declares, when it is one this agentify knows;
+    otherwise the highest known. A level 1 repo must not exit 1 on level 2
+    items it never adopted."""
     declared = load_config(repo.root).level
     top = max_level()
-    if 1 <= declared <= top:
-        return declared
-    elif declared == 0:
-        # No config file: default to level 1 so a level 1 repo must not
-        # exit 1 on level 2 items it never adopted
-        return 1
-    else:
-        # declared > top: clamp to max_level()
-        return top
+    return declared if 1 <= declared <= top else top
 
 
 def main(argv: list[str] | None = None) -> int:

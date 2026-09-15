@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from agentify.cli import main
+from agentify.contract import max_level
 from helpers import fill_all
 
 
@@ -21,7 +22,9 @@ def test_check_on_a_bare_repo_lists_every_item_and_exits_1(python_repo: Path, ca
         assert item in out
     # L1.5 passes vacuously: with no AGENTS.md or README.md there is nothing to scan.
     assert "L1.5  pass" in out
-    assert out.strip().endswith("level 1: FAIL (6 failing)")
+    fail_rows = [line for line in out.splitlines() if " fail " in line]
+    assert len(fail_rows) >= 6
+    assert out.strip().endswith(f"level {max_level()}: FAIL ({len(fail_rows)} failing)")
 
 
 def test_check_json_output(python_repo: Path, capsys):
@@ -95,13 +98,13 @@ def test_check_defaults_to_the_declared_level(tmp_path: Path, monkeypatch, capsy
     assert "T.1" in out and "T.2" not in out and "level 1:" in out
 
 
-def test_check_defaults_to_level_1_without_a_config(
+def test_check_defaults_to_the_highest_level_without_a_config(
     tmp_path: Path, monkeypatch, capsys
 ):
     _two_level_registry(monkeypatch)
     assert main(["check", str(tmp_path)]) == 0
     out = capsys.readouterr().out
-    assert "T.1" in out and "T.2" not in out and "level 1:" in out
+    assert "T.2" in out and "level 2:" in out
 
 
 def test_check_ignores_a_declared_level_above_the_maximum(

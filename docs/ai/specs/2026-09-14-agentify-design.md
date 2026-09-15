@@ -471,3 +471,75 @@ the final whole-branch review.
   `ci.yml` that adopt left alone otherwise goes red on the first push
   because the self-check cannot import agentify. Found on wgan-synthetic's
   first PR.
+
+## Amendments made while planning level 2 (2026-09-15)
+
+Decisions taken when the level 2 plan was written. Each overrides the section
+it names. Two facts drove them: neither reference repo had the
+`agent-reported` label, so the filing command the level 1 router prints
+failed on both; and the owner's repositories had accumulated 44 and 100
+branches with delete-on-merge off, which the owner ruled should be handled by
+a rule that checks whether a branch is finished, not by GitHub's blind
+delete-on-merge.
+
+- **§1, L2.1 Setup.** The setup entry point is a `make setup` target that the
+  Python adapter's gate body carries from level 1 on. The spec's "appended to
+  the generated Makefile only" is withdrawn: adopt never edits a Makefile
+  (AGENTS.md invariant 1) and cannot tell its own earlier output from a
+  hand-written file. One target, written once; a hand-written Makefile
+  without it fails L2.1 with a reason naming the template. The Python target
+  creates `.venv` if absent, installs `requirements-dev.txt`, then
+  `requirements.txt` and `-e .` when present, mirroring the CI steps; every
+  step skips what exists, which is what makes it idempotent. "Accepts
+  `--dry-run`" becomes `make -n setup`, the same mechanism L1.2 uses for
+  `check`, with the same 30 s bound. The router's *Where to look* table must
+  contain the text `make setup`; the template gains that row.
+- **§1, L2.2 Bug channel.** Adopt writes `.github/workflows/notify.yml` from
+  a template derived from gpu-queue-management's, gating on `agent-reported`
+  or `auto-bug`. The check reads the label from the router's *What requires
+  a human* section (the `--label <name>` argument of the filing command) and
+  requires: trigger `issues` with type `opened`; top-level permissions
+  exactly `issues: write`; a timeout on every job; the job's `if` expression
+  names the router's label. Labels are repository state the check cannot see
+  offline, so `docs/adopting.md` gains the `gh label create` commands as a
+  required step of conversion.
+- **§1, L2.3 Review bots.** File-name agnostic, because the reference repo
+  names its workflows `claude-review.yml` and `docs-review.yml`. The check
+  scans every workflow under `.github/workflows/` that triggers on
+  `pull_request` and has a step with a `prompt:` input. For each: no
+  `contents: write` at top level or on any job, and the prompt mentions
+  `AGENTS.md`. `id-token: write` is allowed; the action cannot mint its
+  credentials without it. No matching workflow reports *n/a*. There is no
+  generator; the runbook points at wgan-synthetic's two workflows as the
+  copyable reference.
+- **§1, L2.4 Branch hygiene (new item, ruled by the owner 2026-09-15).**
+  Adopt writes `.github/workflows/branch-hygiene.yml`. Two triggers, one
+  script. On `pull_request` type `closed` with `merged == true`: delete the
+  head branch unless the PR carries the `keep-branch` label, the head matches
+  a keep pattern listed in the workflow's `KEEP_PATTERNS` env, the head repo
+  is not this repository, another open PR uses the branch as base, or the
+  branch has moved past the merged commit. On `workflow_dispatch`: sweep every
+  remote branch fully contained in the default branch (`git branch -r
+  --merged`) through the same skips; an `apply` input defaulting to `false`
+  lists candidates without deleting. Every skip is printed with its reason.
+  Permissions are exactly `contents: write` and `pull-requests: read`, on
+  this workflow only. The check parses the file: `pull_request` trigger with
+  type `closed`, `workflow_dispatch` present, never `pull_request_target`,
+  the permissions above and nothing more, every job has a timeout, some job
+  `if` contains `merged == true`, and the text `keep-branch` appears. It is a
+  rule, not a model judgement, because the action is a deletion; the label
+  gives the author the same control without guessing.
+- **§3, `check`'s default level.** With more than one level, `agentify check`
+  with no `--level` uses the level declared in `.agentify.toml` when there is
+  one and the highest known level otherwise. A level 1 repo must not exit 1
+  on level 2 items it never adopted. `--level` still overrides.
+- **§3, what adopt writes at level 2.** `.github/workflows/notify.yml` and
+  `.github/workflows/branch-hygiene.yml`. Nothing else: the setup target
+  lives in the level 1 Makefile, and L2.3 has no generator.
+- **§5.** The level-bound tests that assert the maximum level is 1 are
+  rewritten against `max_level()` so they hold as levels are added. The
+  integration test adopts at level 2, so the generated workflows are
+  exercised by the contract self-check in a fresh venv.
+- **§7, out of scope for level 2.** Creating labels or flipping repository
+  settings from adopt (adopt writes files; repository state is the runbook's).
+  Any bug-filing or autofix job (level 3). Deleting branches on forks.

@@ -143,3 +143,31 @@ def test_generate_without_adapter_leaves_a_fill_marker(tmp_path: Path):
     l1_3_ci.generate(repo, dry_run=False)
     r = l1_3_ci.check(repo)
     assert r.status == FAIL and "<<FILL>>" in r.reason
+
+
+def test_python_repo_with_dev_requirements_needs_ci_to_install_them(python_repo: Path):
+    (python_repo / "requirements-dev.txt").write_text(
+        "ruff\npytest\nagentify @ git+https://x@v1\n"
+    )
+    r = l1_3_ci.check(write(python_repo, GOOD))
+    assert r.status == FAIL and "requirements-dev.txt" in r.reason
+    installs = GOOD.replace(
+        "      - run: make check\n",
+        "      - run: pip install -r requirements-dev.txt\n      - run: make check\n",
+    )
+    assert l1_3_ci.check(write(python_repo, installs)).status == PASS
+
+
+def test_a_step_that_imports_agentify_also_satisfies_the_dev_requirements_rule(
+    python_repo: Path,
+):
+    (python_repo / "requirements-dev.txt").write_text("agentify @ git+https://x@v1\n")
+    imports = GOOD.replace(
+        "      - run: make check\n",
+        "      - run: python -c 'import agentify'\n      - run: make check\n",
+    )
+    assert l1_3_ci.check(write(python_repo, imports)).status == PASS
+
+
+def test_without_dev_requirements_the_rule_does_not_apply(python_repo: Path):
+    assert l1_3_ci.check(write(python_repo, GOOD)).status == PASS

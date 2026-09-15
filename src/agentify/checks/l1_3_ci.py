@@ -77,6 +77,17 @@ def check(repo: Repo) -> Result:
     ]
     if not any("make check" in run for run in runs):
         return Result(ID, FAIL, f"{WORKFLOW}: no step runs `make check`")
+    if repo.exists("requirements-dev.txt") and not any(
+        "requirements-dev.txt" in run or "agentify" in run for run in runs
+    ):
+        # The self-check adopt writes imports agentify, which only
+        # requirements-dev.txt installs; a hand-written workflow that skips it
+        # goes red on the first push, as the first real conversion showed.
+        return Result(
+            ID,
+            FAIL,
+            f"{WORKFLOW}: no step installs requirements-dev.txt, so the contract self-check cannot import agentify in CI",
+        )
     return Result(
         ID, PASS, "ci.yml runs `make check` on PRs and main with read-only permissions"
     )

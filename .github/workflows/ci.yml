@@ -43,5 +43,10 @@ jobs:
           uv pip install --python .venv/bin/python -e '.[dev]'
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
+      - name: Confirm the contract self-check can import its dependency
+        # Other repos get agentify from requirements-dev.txt; this repo installs
+        # itself from the checkout, so prove the import rather than the pin.
+        run: python -c "import agentify; print(agentify.AGENTIFY_PIN)"
+
       - name: Run the gate
         run: make check

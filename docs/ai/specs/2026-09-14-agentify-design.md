@@ -466,3 +466,8 @@ the final whole-branch review.
   expands to every file it matches, for L1.4 (present when at least one
   file matches) and for the set of documents L1.5 scans. Found by converting
   wgan-synthetic, whose router lists `docs/datasets/*.md`.
+- **§1, L1.3 (2026-09-15).** For a repo with `requirements-dev.txt`, some
+  workflow step must install it or mention `agentify`; a hand-written
+  `ci.yml` that adopt left alone otherwise goes red on the first push
+  because the self-check cannot import agentify. Found on wgan-synthetic's
+  first PR.

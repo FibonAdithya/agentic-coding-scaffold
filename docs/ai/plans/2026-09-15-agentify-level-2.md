@@ -1060,20 +1060,32 @@ jobs:
           PR_HEAD: ${{ github.event.pull_request.head.ref }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+          PR_LABELS: ${{ github.event_name == 'pull_request' && join(github.event.pull_request.labels.*.name, ' ') || '' }}
         run: |
           set -euo pipefail
           git fetch --prune --quiet origin
 
+          # Open PRs protect their base branches. If there are more than the
+          # page holds, an unlisted one could lose its base: refuse rather
+          # than guess. The merged page has no such failure mode (an unlisted
+          # squash-merged branch is merely kept).
           open_prs=$(gh pr list --state open --limit 500 --json headRefName,baseRefName \
             --jq '.[] | "\(.headRefName) \(.baseRefName)"')
+          if [ "$(grep -c . <<<"$open_prs")" -ge 500 ]; then
+            echo "refusing: 500 or more open PRs; the page may be incomplete" >&2
+            exit 1
+          fi
           merged_tips=$(gh pr list --state merged --limit 500 --json headRefName,headRefOid \
             --jq '.[] | "\(.headRefName) \(.headRefOid)"')
+          merged_keep=$(gh pr list --state merged --limit 500 --json headRefName,labels \
+            --jq ".[] | select(any(.labels[]; .name == \"$KEEP_LABEL\")) | .headRefName")
 
           if [ "$EVENT" = pull_request ]; then
             candidates="$PR_HEAD"
           else
-            candidates=$(git for-each-ref 'refs/remotes/origin/*' --format='%(refname:lstrip=3)')
+            # A prefix, not a glob: for-each-ref's `*` does not cross a slash,
+            # which would hide every branch named like release/1 from the sweep.
+            candidates=$(git for-each-ref refs/remotes/origin/ --format='%(refname:lstrip=3)')
           fi
 
           deleted=0
@@ -1098,6 +1110,8 @@ jobs:
               reason="head is on a fork"
             elif [ "$EVENT" = pull_request ] && [[ " $PR_LABELS " == *" $KEEP_LABEL "* ]]; then
               reason="labelled $KEEP_LABEL"
+            elif grep -qx "$branch" <<<"$merged_keep"; then
+              reason="a merged PR from it is labelled $KEEP_LABEL"
             elif [ "$EVENT" = pull_request ] && [ "$tip" != "$PR_HEAD_SHA" ]; then
               reason="moved past the merged commit"
             elif grep -q " $branch\$" <<<"$open_prs"; then

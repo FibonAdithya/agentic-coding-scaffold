@@ -42,7 +42,7 @@ def test_makefile_without_setup_fails_and_names_the_template(tmp_path: Path):
     r = l2_1_setup.check(repo_with(tmp_path, "check:\n\techo check\n", ROUTER_WITH_ROW))
     assert r.status == FAIL
     assert "no `setup` target" in r.reason
-    assert "src/agentify/templates/Makefile" in r.reason
+    assert "src/agentify/adapters/python.py::GATE_BODY" in r.reason
 
 
 def test_router_without_the_row_fails(tmp_path: Path):

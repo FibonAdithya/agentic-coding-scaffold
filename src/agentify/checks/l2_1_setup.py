@@ -12,7 +12,7 @@ from agentify.docs_refs import section
 from agentify.repo import Repo
 
 ID = "L2.1"
-TEMPLATE = "src/agentify/templates/Makefile"
+TEMPLATE = "src/agentify/adapters/python.py::GATE_BODY"
 ROW_TEXT = "make setup"
 ROUTER_SECTION = "Where to look"
 
@@ -25,8 +25,7 @@ def check(repo: Repo) -> Result:
         return Result(
             ID,
             FAIL,
-            f"Makefile: no `setup` target; copy it from {TEMPLATE} "
-            "(the Python adapter's gate body carries one)",
+            f"Makefile: no `setup` target; copy it from {TEMPLATE}",
         )
     router = repo.read("AGENTS.md")
     if router is None:

@@ -74,3 +74,40 @@ def test_fill_exits_1_on_an_unterminated_marker(tmp_path: Path, capsys):
 
 def test_missing_repo_path_is_an_error(tmp_path: Path):
     assert main(["check", str(tmp_path / "nope")]) == 2
+
+
+def _two_level_registry(monkeypatch):
+    import agentify.contract as c
+    from agentify.contract import PASS, Item, Result
+
+    items = [
+        Item("T.1", 1, "one", lambda r: Result("T.1", PASS, "ok"), lambda r, d: []),
+        Item("T.2", 2, "two", lambda r: Result("T.2", PASS, "ok"), lambda r, d: []),
+    ]
+    monkeypatch.setattr(c, "registry", lambda: items)
+
+
+def test_check_defaults_to_the_declared_level(tmp_path: Path, monkeypatch, capsys):
+    _two_level_registry(monkeypatch)
+    (tmp_path / ".agentify.toml").write_text("[contract]\nlevel = 1\n")
+    assert main(["check", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "T.1" in out and "T.2" not in out and "level 1:" in out
+
+
+def test_check_defaults_to_the_highest_level_without_a_config(
+    tmp_path: Path, monkeypatch, capsys
+):
+    _two_level_registry(monkeypatch)
+    assert main(["check", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "T.2" in out and "level 2:" in out
+
+
+def test_check_ignores_a_declared_level_above_the_maximum(
+    tmp_path: Path, monkeypatch, capsys
+):
+    _two_level_registry(monkeypatch)
+    (tmp_path / ".agentify.toml").write_text("[contract]\nlevel = 9\n")
+    assert main(["check", str(tmp_path)]) == 0
+    assert "level 2:" in capsys.readouterr().out

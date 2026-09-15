@@ -7,6 +7,7 @@ import json
 import sys
 from dataclasses import asdict
 
+from agentify.config import load_config
 from agentify.contract import FAIL, max_level, run_adopt, run_checks
 from agentify.fill import find_markers
 from agentify.repo import Repo
@@ -28,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         choices=range(1, max_level() + 1),
-        help=f"1..{max_level()} (default: highest known)",
+        help=f"1..{max_level()} (default: the level .agentify.toml declares, else the highest known)",
     )
     check.add_argument("--json", action="store_true", help="machine-readable output")
 
@@ -71,6 +72,15 @@ def cmd_fill(repo: Repo) -> int:
     return 1 if markers else 0
 
 
+def _default_level(repo: Repo) -> int:
+    """The level .agentify.toml declares, when it is one this agentify knows;
+    otherwise the highest known. A level 1 repo must not exit 1 on level 2
+    items it never adopted."""
+    declared = load_config(repo.root).level
+    top = max_level()
+    return declared if 1 <= declared <= top else top
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -79,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"agentify: {exc}", file=sys.stderr)
         return 2
     if args.command == "check":
-        level = args.level if args.level is not None else max_level()
+        level = args.level if args.level is not None else _default_level(repo)
         return cmd_check(repo, level, args.json)
     if args.command == "adopt":
         return cmd_adopt(repo, args.level, args.dry_run)

@@ -73,6 +73,7 @@ nobody.
 |---|---|
 | Set up and run day-to-day commands | `README.md` |
 | Run the gate | `Makefile` |
+| Set up a development environment | `make setup` (a target in `Makefile`) |
 | Why a decision was made (non-authoritative) | `docs/ai/specs/` |
 <<FILL: One row per recurring task: the entry point, the data contract, the
 configs, where the tests for a subsystem live. Cite documents by anchor

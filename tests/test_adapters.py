@@ -62,3 +62,13 @@ def test_resolve_symbol_is_false_for_non_python_or_unparseable(tmp_path: Path):
     bad = tmp_path / "bad.py"
     bad.write_text("def (:\n")
     assert not a.resolve_symbol(bad, "x")
+
+
+def test_python_gate_body_has_an_idempotent_setup_target(tmp_path):
+    body = PythonAdapter().gate_body()
+    assert "\nsetup: $(VENV)/bin/python\n" in body
+    assert "$(VENV)/bin/python:\n\t$(PYTHON) -m venv $(VENV)\n" in body
+    assert "-r requirements-dev.txt" in body
+    assert "setup" in body.split(".PHONY:")[1].splitlines()[0]
+    for forbidden in ("|| true", "|| exit 0", "\n\t-"):
+        assert forbidden not in body

@@ -95,13 +95,13 @@ def test_check_defaults_to_the_declared_level(tmp_path: Path, monkeypatch, capsy
     assert "T.1" in out and "T.2" not in out and "level 1:" in out
 
 
-def test_check_defaults_to_the_highest_level_without_a_config(
+def test_check_defaults_to_level_1_without_a_config(
     tmp_path: Path, monkeypatch, capsys
 ):
     _two_level_registry(monkeypatch)
     assert main(["check", str(tmp_path)]) == 0
     out = capsys.readouterr().out
-    assert "T.2" in out and "level 2:" in out
+    assert "T.1" in out and "T.2" not in out and "level 1:" in out
 
 
 def test_check_ignores_a_declared_level_above_the_maximum(

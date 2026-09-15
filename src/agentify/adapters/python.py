@@ -8,8 +8,9 @@ from pathlib import Path
 GATE_BODY = """\
 PYTHON ?= python
 RUFF ?= ruff
+VENV ?= .venv
 
-.PHONY: check lint format-check format test
+.PHONY: check lint format-check format test setup
 
 check: lint format-check test
 
@@ -25,6 +26,18 @@ format:
 
 test:
 \t$(PYTHON) -m pytest
+
+# One idempotent entry point for a fresh checkout. The venv rule below only
+# fires when $(VENV) is absent; every install step is a no-op the second
+# time. `make -n setup` shows what would run without running it.
+setup: $(VENV)/bin/python
+\t$(VENV)/bin/python -m pip install --quiet --upgrade pip
+\t$(VENV)/bin/python -m pip install --quiet -r requirements-dev.txt
+\tif [ -f requirements.txt ]; then $(VENV)/bin/python -m pip install --quiet -r requirements.txt; fi
+\tif grep -q '^\\[project\\]' pyproject.toml 2>/dev/null; then $(VENV)/bin/python -m pip install --quiet -e .; fi
+
+$(VENV)/bin/python:
+\t$(PYTHON) -m venv $(VENV)
 """
 
 # `pip install -e .` only when there is a [project] table: a pyproject.toml

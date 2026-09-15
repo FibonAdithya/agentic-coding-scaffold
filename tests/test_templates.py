@@ -35,6 +35,7 @@ def test_all_templates_are_present():
         "Makefile",
         "README.md",
         "agentify.toml",
+        "branch-hygiene.yml",
         "ci.yml",
         "docs-ai-README.md",
         "notify.yml",

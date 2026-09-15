@@ -26,7 +26,8 @@ def test_check_on_a_bare_repo_lists_every_item_and_exits_1(python_repo: Path, ca
     assert "L2.1  fail" in out
     assert "L2.2  fail" in out
     assert "L2.3  n/a" in out
-    assert out.strip().endswith("level 2: FAIL (8 failing)")
+    assert "L2.4  fail" in out
+    assert out.strip().endswith("level 2: FAIL (9 failing)")
 
 
 def test_check_json_output(python_repo: Path, capsys):

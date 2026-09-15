@@ -21,7 +21,9 @@ When two documents disagree, the one higher in this list wins.
 2. **`README.md`** — setup and the commands you run day to day.
 3. **`docs/ai/`** — *not authoritative*. Design specs and plans written by
    agents during development, kept for the reasoning behind decisions. They
-   are not updated as the code changes. See `docs/ai/README.md`.
+   are not updated as the code changes. See `docs/ai/README.md`. Agents
+   writing a new design spec put it in `docs/ai/specs/`; implementation
+   plans go in `docs/ai/plans/`; nowhere else.
 
 <<FILL: If the project has a technical reference, a data contract, or a
 config schema document, insert it between the code and README.md and say

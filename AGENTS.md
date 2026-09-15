@@ -30,7 +30,9 @@ When two documents disagree, the one higher in this list wins.
    runbook for finishing a conversion.
 4. **`docs/ai/`** — *not authoritative*. Design specs and plans written by
    agents during development, kept for the reasoning. They are not updated as
-   the code changes. See `docs/ai/README.md`.
+   the code changes. See `docs/ai/README.md`. Agents writing a new design
+   spec put it in `docs/ai/specs/`; implementation plans go in
+   `docs/ai/plans/`; nowhere else.
 
 ## Invariants
 

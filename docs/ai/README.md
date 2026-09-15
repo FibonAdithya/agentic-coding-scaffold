@@ -10,3 +10,7 @@ disagrees with the code or with the human-maintained documents that
 
 They are kept because the reasoning behind a decision is often more useful
 than the decision, and that reasoning is not recoverable from a diff.
+
+Agents writing a new spec or plan put it here: design specs in `specs/`,
+implementation plans in `plans/`, named `YYYY-MM-DD-<topic>.md`. Never in
+another directory.

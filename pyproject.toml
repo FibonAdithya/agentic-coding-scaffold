@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentify"
-version = "0.1.2"
+version = "0.2.0"
 description = "A contract for agent-operable repositories, a checker, and a converter"
 requires-python = ">=3.11"
 dependencies = ["pyyaml>=6"]

@@ -7,6 +7,7 @@ names, substituted into a provider-neutral template.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from agentify.repo import Repo, write_if_missing
@@ -89,3 +90,56 @@ def run_review(
         )
     actions.append(f"next     gh secret set {provider.secret} --repo <owner/name>")
     return actions
+
+
+PROVIDERS = ("claude", "custom")
+
+
+class MissingOption(ValueError):
+    """A required option was neither given as a flag nor answerable (no TTY)."""
+
+    def __init__(self, option: str):
+        super().__init__(f"--{option} is required")
+        self.option = option
+
+
+def _need(
+    value: str | None, option: str, question: str, ask: Callable[[str], str] | None
+) -> str:
+    """The flag's value, or the answer to `question` on a terminal.
+
+    Asks only when the flag is absent; never asks for something already
+    given. A blank answer is missing, not an empty value."""
+    if value is not None and value.strip():
+        return value.strip()
+    if ask is None:
+        raise MissingOption(option)
+    answer = ask(question).strip()
+    if not answer:
+        raise MissingOption(option)
+    return answer
+
+
+def resolve_provider(
+    provider: str | None,
+    auth: str,
+    uses: str | None,
+    auth_input: str | None,
+    secret: str | None,
+    ask: Callable[[str], str] | None,
+) -> Provider:
+    name = _need(provider, "provider", "--provider (claude or custom): ", ask)
+    if name == "claude":
+        return claude(auth)
+    if name != "custom":
+        raise ValueError(f"unknown provider {name!r}: choose claude or custom")
+    return custom(
+        _need(uses, "uses", "--uses, the action to run (owner/action@ref): ", ask),
+        _need(
+            auth_input,
+            "auth-input",
+            "--auth-input, the with: key that receives the secret: ",
+            ask,
+        ),
+        _need(secret, "secret", "--secret, the repository secret's name: ", ask),
+    )

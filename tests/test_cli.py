@@ -2,6 +2,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from agentify.cli import main
 from helpers import fill_all
 
@@ -154,3 +156,73 @@ def test_level_1_adopt_then_level_2_adopt_only_adds(python_repo: Path, capsys):
     assert "wrote    .github/workflows/branch-hygiene.yml" in out
     assert out.count("wrote") == 2
     assert "raised   .agentify.toml level 1 -> 2" in out
+
+
+def test_review_writes_the_workflow_and_prints_the_secret_step(
+    python_repo: Path, capsys
+):
+    assert main(["review", str(python_repo), "--provider", "claude"]) == 0
+    out = capsys.readouterr().out
+    assert "wrote    .github/workflows/review.yml" in out
+    assert "docs-review.yml" not in out
+    assert "gh secret set CLAUDE_CODE_AUTH_TOKEN" in out
+    assert (python_repo / ".github/workflows/review.yml").is_file()
+
+
+def test_review_docs_review_and_dry_run(python_repo: Path, capsys):
+    before = tree_hash(python_repo)
+    assert (
+        main(
+            [
+                "review",
+                str(python_repo),
+                "--provider",
+                "custom",
+                "--uses",
+                "acme/reviewer@v2",
+                "--auth-input",
+                "acme_token",
+                "--secret",
+                "ACME_TOKEN",
+                "--docs-review",
+                "--dry-run",
+            ]
+        )
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "would write .github/workflows/review.yml" in out
+    assert "would write .github/workflows/docs-review.yml" in out
+    assert "gh secret set ACME_TOKEN" in out
+    assert tree_hash(python_repo) == before
+
+
+def test_review_without_provider_and_without_a_terminal_exits_2(
+    python_repo: Path, monkeypatch, capsys
+):
+    import agentify.cli as cli
+
+    monkeypatch.setattr(cli, "interactive_ask", lambda: None)
+    with pytest.raises(SystemExit) as exc:
+        main(["review", str(python_repo)])
+    assert exc.value.code == 2
+    assert "--provider is required" in capsys.readouterr().err
+
+
+def test_review_asks_on_a_terminal(python_repo: Path, monkeypatch, capsys):
+    import agentify.cli as cli
+
+    monkeypatch.setattr(cli, "interactive_ask", lambda: lambda q: "claude")
+    assert main(["review", str(python_repo)]) == 0
+    assert "wrote    .github/workflows/review.yml" in capsys.readouterr().out
+
+
+def test_review_then_check_passes_l2_3(python_repo: Path, capsys):
+    main(["adopt", str(python_repo), "--level", "2"])
+    main(["review", str(python_repo), "--provider", "claude", "--docs-review"])
+    fill_all(python_repo)
+    capsys.readouterr()
+    assert main(["check", str(python_repo)]) == 0
+    out = capsys.readouterr().out
+    assert "L2.3  pass" in out
+    assert "review.yml" in out and "docs-review.yml" in out

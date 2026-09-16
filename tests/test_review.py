@@ -137,3 +137,69 @@ def test_run_review_dry_run_writes_nothing(tmp_path: Path):
         "would write .github/workflows/docs-review.yml",
     ]
     assert not (tmp_path / ".github").exists()
+
+
+def _asker(answers: dict[str, str]):
+    """Answers a question by the flag name it mentions; records what was asked."""
+    asked: list[str] = []
+
+    def ask(question: str) -> str:
+        asked.append(question)
+        for key, value in answers.items():
+            if key in question:
+                return value
+        raise AssertionError(f"unexpected question {question!r}")
+
+    return ask, asked
+
+
+def test_resolve_claude_from_flags_asks_nothing():
+    ask, asked = _asker({})
+    p = review.resolve_provider("claude", "api-key", None, None, None, ask)
+    assert p == review.claude("api-key")
+    assert asked == []
+
+
+def test_resolve_custom_from_flags_asks_nothing():
+    ask, asked = _asker({})
+    p = review.resolve_provider(
+        "custom", "oauth", "acme/reviewer@v2", "acme_token", "ACME_TOKEN", ask
+    )
+    assert p == PROVIDERS["custom"]
+    assert asked == []
+
+
+def test_resolve_without_provider_and_without_a_terminal_raises():
+    with pytest.raises(review.MissingOption) as exc:
+        review.resolve_provider(None, "oauth", None, None, None, None)
+    assert exc.value.option == "provider"
+
+
+def test_resolve_custom_missing_one_flag_without_a_terminal_names_it():
+    with pytest.raises(review.MissingOption) as exc:
+        review.resolve_provider("custom", "oauth", "acme/r@v1", None, "S", None)
+    assert exc.value.option == "auth-input"
+
+
+def test_resolve_asks_only_for_what_is_missing():
+    ask, asked = _asker({"--provider": "custom", "--auth-input": "acme_token"})
+    p = review.resolve_provider(
+        None, "oauth", "acme/reviewer@v2", None, "ACME_TOKEN", ask
+    )
+    assert p == PROVIDERS["custom"]
+    assert len(asked) == 2
+    assert "--provider" in asked[0] and "claude" in asked[0] and "custom" in asked[0]
+    assert "--auth-input" in asked[1]
+
+
+def test_resolve_rejects_an_unknown_provider_answer():
+    ask, _ = _asker({"--provider": "gpt"})
+    with pytest.raises(ValueError, match="gpt"):
+        review.resolve_provider(None, "oauth", None, None, None, ask)
+
+
+def test_resolve_treats_a_blank_answer_as_missing():
+    ask, _ = _asker({"--provider": "   "})
+    with pytest.raises(review.MissingOption) as exc:
+        review.resolve_provider(None, "oauth", None, None, None, ask)
+    assert exc.value.option == "provider"

@@ -412,8 +412,8 @@ Expected: all pass. If `test_rendered_workflow_parses_and_passes_l2_3` fails wit
 
 - [ ] **Step 6: Lint and format**
 
-Run: `PATH=$PWD/.venv/bin:$PATH ruff check src/agentify/review.py tests/test_review.py && PATH=$PWD/.venv/bin:$PATH ruff format src/agentify/review.py tests/test_review.py tests/test_templates.py`
-Expected: no lint errors; format may rewrite the three files.
+Run: `PATH=$PWD/.venv/bin:$PATH ruff check --fix src/agentify/review.py tests/test_review.py && PATH=$PWD/.venv/bin:$PATH ruff format src/agentify/review.py tests/test_review.py tests/test_templates.py`
+Expected: no lint errors (`--fix` reorders imports under the I rules; nothing else in these files is auto-fixable); format may rewrite the three files.
 
 - [ ] **Step 7: Commit**
 
@@ -538,7 +538,7 @@ Expected: all pass.
 - [ ] **Step 5: Lint, format, commit**
 
 ```bash
-PATH=$PWD/.venv/bin:$PATH ruff check src/agentify/review.py tests/test_review.py
+PATH=$PWD/.venv/bin:$PATH ruff check --fix src/agentify/review.py tests/test_review.py
 PATH=$PWD/.venv/bin:$PATH ruff format src/agentify/review.py tests/test_review.py
 git add src/agentify/review.py tests/test_review.py
 git commit -m "feat(review): run_review writes the workflows and names the secret step
@@ -784,7 +784,7 @@ Add `import pytest` to the imports at the top of `tests/test_cli.py` (after `imp
 - [ ] **Step 6: Run to verify they fail**
 
 Run: `PATH=$PWD/.venv/bin:$PATH pytest tests/test_cli.py -q -k review`
-Expected: 5 failures; argparse rejects `review` as an invalid choice (`SystemExit: 2`), so `test_review_without_provider_and_without_a_terminal_exits_2` may pass by accident on the exit code but fail on the `--provider is required` message. Confirm all five are red before continuing.
+Expected: 5 failures. argparse rejects `review` as an invalid choice with `SystemExit(2)`, so four tests error on the unexpected exit, and `test_review_without_provider_and_without_a_terminal_exits_2` gets the right exit code by accident but fails on `assert "--provider is required" in ...err`. All five must be red before continuing; if the fifth is green, the assertion on the message is missing.
 
 - [ ] **Step 7: Wire the subcommand**
 
@@ -847,7 +847,8 @@ Add these functions after `cmd_fill`:
 def interactive_ask() -> Callable[[str], str] | None:
     """`input` on a terminal, else None: an agent driving the CLI must get an
     error for a missing flag, never a prompt that waits forever."""
-    return input if sys.stdin.isatty() else None
+    stdin = sys.stdin
+    return input if stdin is not None and stdin.isatty() else None
 
 
 def cmd_review(
@@ -893,7 +894,7 @@ Expected: all pass. `parser.error` raises `SystemExit(2)` and writes to stderr, 
 - [ ] **Step 9: Lint, format, commit**
 
 ```bash
-PATH=$PWD/.venv/bin:$PATH ruff check src tests
+PATH=$PWD/.venv/bin:$PATH ruff check --fix src tests
 PATH=$PWD/.venv/bin:$PATH ruff format src/agentify/cli.py src/agentify/review.py tests/test_cli.py tests/test_review.py
 git add src/agentify/cli.py src/agentify/review.py tests/test_cli.py tests/test_review.py
 git commit -m "feat(review): the agentify review subcommand asks only on a terminal
@@ -954,15 +955,24 @@ Expected: pass (needs `uv` on PATH; takes about 30 s). The converted repo's `tes
 
 - [ ] **Step 3: Mutation check of the tie**
 
-Temporarily edit `src/agentify/templates/review.yml` to change `contents: read` to `contents: write`. Run:
+Three mutations, one at a time, each against `src/agentify/templates/review.yml`; after each, run
 
 `PATH=$PWD/.venv/bin:$PATH pytest tests/test_review.py -q -k "passes_l2_3 or shape"`
 
-Expected: the `passes_l2_3` cases for `review.yml` fail with `grants contents: write`; `docs-review.yml` cases still pass. Restore the file (`git checkout src/agentify/templates/review.yml`) and confirm the tests are green again. Record the result in the commit message.
+then restore with `git checkout src/agentify/templates/review.yml` and confirm green before the next.
+
+| Mutation | Expected red tests | Expected reason text |
+|---|---|---|
+| `contents: read` becomes `contents: write` | the 3 `passes_l2_3[review.yml-*]` cases and `shape[review.yml]` | `grants contents: write` |
+| Delete the `timeout-minutes: 20` line | the same 4 | `has no timeout-minutes` |
+| Change `Read AGENTS.md first` to `Read the router first` (both occurrences in the file: the prose and the priority bullet mention `AGENTS.md`; change every occurrence) | the 3 `passes_l2_3[review.yml-*]` cases and `shape[review.yml]` | `a prompt does not tell the model to read AGENTS.md` |
+
+The `docs-review.yml` cases stay green throughout: they read a different file. If any mutation leaves every test green, the tie between template and check is broken; stop and report rather than commit. Record the three results in the commit message.
 
 - [ ] **Step 4: Commit**
 
 ```bash
+PATH=$PWD/.venv/bin:$PATH ruff check --fix tests/test_integration.py
 PATH=$PWD/.venv/bin:$PATH ruff format tests/test_integration.py
 git add tests/test_integration.py
 git commit -m "test(review): the converted repo's own gate reports L2.3 pass
@@ -1098,7 +1108,7 @@ In the *Where to look* table, change `| Run the three commands | `README.md` |` 
 - [ ] **Step 5: Run the gate**
 
 Run: `PATH=$PWD/.venv/bin:$PATH make check 2>&1 | tail -5`
-Expected: ruff clean; every test passes, including `tests/test_docs_references.py` (every new backticked path resolves) and `tests/test_contract.py` (this repo still passes its own level 2 check with L2.3 n/a). Record the passed count for the PR body; it must exceed the 196 baseline by the number of tests added in Tasks 1 to 4.
+Expected: ruff clean; every test passes, including `tests/test_docs_references.py` (every new backticked path resolves) and `tests/test_contract.py` (this repo still passes its own level 2 check with L2.3 n/a). Expected count: **224 passed** = 196 baseline + 28 new: Task 1 adds 12 (6 parametrised L2.3 cases, 4 provider tests, 2 shape cases), Task 2 adds 4, Task 3 adds 7 resolution tests and 5 CLI tests, Task 4 adds none (it extends an existing test). A different number means a test was dropped or duplicated; find which before continuing.
 
 - [ ] **Step 6: Commit**
 
@@ -1134,7 +1144,7 @@ Do not run it without `--dry-run` here: this repo stays at L2.3 n/a (spec sectio
 - [ ] **Step 2: Run the whole gate once more and record the count**
 
 Run: `PATH=$PWD/.venv/bin:$PATH make check 2>&1 | tail -3`
-Expected: `N passed`. Write N down as MEASURED.
+Expected: `224 passed` (see Task 5 Step 5 for the derivation). Write the number down as MEASURED; if it differs, explain the difference in the PR body rather than adjusting the expectation.
 
 - [ ] **Step 3: Push and open the PR**
 

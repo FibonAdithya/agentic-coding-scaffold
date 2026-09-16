@@ -3,7 +3,8 @@
 Everything else in the suite checks that generated files parse. This checks
 that they run: ruff lints the generated tests, pytest runs the contract
 self-check at level 2 and the docs-reference test inside a fresh venv that has only
-what the generated CI would install.
+what the generated CI would install, and that the review workflows `agentify
+review` writes pass L2.3 there.
 """
 
 import os
@@ -14,6 +15,7 @@ from pathlib import Path
 from agentify import AGENTIFY_PIN
 from agentify.contract import run_adopt
 from agentify.repo import Repo
+from agentify.review import claude, run_review
 from helpers import fill_all
 
 AGENTIFY_ROOT = Path(__file__).resolve().parent.parent
@@ -33,6 +35,9 @@ def test_generated_gate_runs_green(python_repo: Path):
         "uv is required: it builds the fixture's venv (https://docs.astral.sh/uv/)"
     )
     run_adopt(Repo.open(python_repo), level=2, dry_run=False)
+    # The generated review workflows must pass the converted repo's own
+    # contract self-check (L2.3), in a fresh venv on the pinned agentify.
+    run_review(Repo.open(python_repo), claude("oauth"), docs_review=True, dry_run=False)
     fill_all(python_repo)
 
     venv = python_repo / ".venv"
@@ -62,6 +67,15 @@ def test_generated_gate_runs_green(python_repo: Path):
         text=True,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+    contract = subprocess.run(
+        ["agentify", "check", ".", "--level", "2"],
+        cwd=python_repo,
+        env=_env_for(venv),
+        capture_output=True,
+        text=True,
+    )
+    assert contract.returncode == 0, contract.stdout + contract.stderr
+    assert "L2.3  pass" in contract.stdout, contract.stdout
 
 
 def test_generated_gate_runs_green_from_requirements_dev_only(python_repo: Path):

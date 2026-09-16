@@ -1,16 +1,18 @@
-"""agentify check | adopt | fill."""
+"""agentify check | adopt | fill | review."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from dataclasses import asdict
 
 from agentify.config import load_config
 from agentify.contract import FAIL, max_level, run_adopt, run_checks
 from agentify.fill import find_markers
 from agentify.repo import Repo
+from agentify.review import MissingOption, resolve_provider, run_review
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,6 +44,43 @@ def build_parser() -> argparse.ArgumentParser:
 
     fill = sub.add_parser("fill", help="list the <<FILL>> markers left to write")
     fill.add_argument("repo", nargs="?", default=".")
+
+    review = sub.add_parser(
+        "review",
+        help="write a PR review workflow for the provider you name; never overwrites",
+    )
+    review.add_argument("repo", nargs="?", default=".")
+    review.add_argument(
+        "--provider",
+        choices=["claude", "custom"],
+        default=None,
+        help="the model step; asked for on a terminal when omitted",
+    )
+    review.add_argument(
+        "--auth",
+        choices=["oauth", "api-key"],
+        default="oauth",
+        help="claude only: bill a Claude subscription (CLAUDE_CODE_AUTH_TOKEN) or an API key (ANTHROPIC_API_KEY)",
+    )
+    review.add_argument(
+        "--uses",
+        default=None,
+        help="custom only: the action to run, owner/action@ref; it must accept a `prompt` input",
+    )
+    review.add_argument(
+        "--auth-input",
+        default=None,
+        help="custom only: the with: key that receives the secret",
+    )
+    review.add_argument(
+        "--secret", default=None, help="custom only: the repository secret's name"
+    )
+    review.add_argument(
+        "--docs-review",
+        action="store_true",
+        help="also write docs-review.yml, a second workflow for documentation drift",
+    )
+    review.add_argument("--dry-run", action="store_true")
     return parser
 
 
@@ -72,6 +111,34 @@ def cmd_fill(repo: Repo) -> int:
     return 1 if markers else 0
 
 
+def interactive_ask() -> Callable[[str], str] | None:
+    """`input` on a terminal, else None: an agent driving the CLI must get an
+    error for a missing flag, never a prompt that waits forever."""
+    stdin = sys.stdin
+    return input if stdin is not None and stdin.isatty() else None
+
+
+def cmd_review(
+    parser: argparse.ArgumentParser, repo: Repo, args: argparse.Namespace
+) -> int:
+    try:
+        provider = resolve_provider(
+            args.provider,
+            args.auth,
+            args.uses,
+            args.auth_input,
+            args.secret,
+            interactive_ask(),
+        )
+    except MissingOption as exc:
+        parser.error(f"{exc} (pass the flag, or answer the prompt on a terminal)")
+    except ValueError as exc:
+        parser.error(str(exc))
+    for action in run_review(repo, provider, args.docs_review, args.dry_run):
+        print(action)
+    return 0
+
+
 def _default_level(repo: Repo) -> int:
     """The level .agentify.toml declares, when it is one this agentify knows;
     otherwise the highest known. A level 1 repo must not exit 1 on level 2
@@ -82,7 +149,8 @@ def _default_level(repo: Repo) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     try:
         repo = Repo.open(args.repo)
     except FileNotFoundError as exc:
@@ -93,4 +161,6 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_check(repo, level, args.json)
     if args.command == "adopt":
         return cmd_adopt(repo, args.level, args.dry_run)
+    if args.command == "review":
+        return cmd_review(parser, repo, args)
     return cmd_fill(repo)

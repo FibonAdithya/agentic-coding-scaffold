@@ -38,8 +38,10 @@ def test_all_templates_are_present():
         "branch-hygiene.yml",
         "ci.yml",
         "docs-ai-README.md",
+        "docs-review.yml",
         "notify.yml",
         "requirements-dev.txt",
+        "review.yml",
         "test_contract.py.tmpl",
         "test_docs_references.py.tmpl",
     ]

@@ -88,3 +88,52 @@ def test_rendered_workflow_shape(template: str):
     assert parsed["concurrency"]["group"].startswith(
         template.removesuffix(".yml") + "-"
     )
+
+
+def test_run_review_writes_review_only_by_default(tmp_path: Path):
+    actions = review.run_review(
+        Repo.open(tmp_path), review.claude("oauth"), docs_review=False, dry_run=False
+    )
+    assert actions[0] == "wrote    .github/workflows/review.yml"
+    assert (tmp_path / review.REVIEW).is_file()
+    assert not (tmp_path / review.DOCS_REVIEW).exists()
+    assert (
+        actions[-1]
+        == "next     gh secret set CLAUDE_CODE_AUTH_TOKEN --repo <owner/name>"
+    )
+
+
+def test_run_review_with_docs_review_writes_both(tmp_path: Path):
+    actions = review.run_review(
+        Repo.open(tmp_path), PROVIDERS["custom"], docs_review=True, dry_run=False
+    )
+    assert actions[:2] == [
+        "wrote    .github/workflows/review.yml",
+        "wrote    .github/workflows/docs-review.yml",
+    ]
+    assert actions[-1] == "next     gh secret set ACME_TOKEN --repo <owner/name>"
+    written = (tmp_path / review.DOCS_REVIEW).read_text()
+    assert written == review.render_workflow("docs-review.yml", PROVIDERS["custom"])
+
+
+def test_run_review_never_overwrites(tmp_path: Path):
+    mine = "name: mine\non: pull_request\njobs: {}\n"
+    target = tmp_path / review.REVIEW
+    target.parent.mkdir(parents=True)
+    target.write_text(mine)
+    actions = review.run_review(
+        Repo.open(tmp_path), review.claude("oauth"), docs_review=False, dry_run=False
+    )
+    assert actions[0] == "exists   .github/workflows/review.yml"
+    assert target.read_text() == mine
+
+
+def test_run_review_dry_run_writes_nothing(tmp_path: Path):
+    actions = review.run_review(
+        Repo.open(tmp_path), review.claude("oauth"), docs_review=True, dry_run=True
+    )
+    assert actions[:2] == [
+        "would write .github/workflows/review.yml",
+        "would write .github/workflows/docs-review.yml",
+    ]
+    assert not (tmp_path / ".github").exists()

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from agentify.repo import Repo, write_if_missing
 from agentify.templates import render
 
 REVIEW = ".github/workflows/review.yml"
@@ -67,3 +68,24 @@ def render_workflow(template: str, provider: Provider) -> str:
         id_token=ID_TOKEN_LINE if provider.id_token else "",
         extra_with=provider.extra_with.rstrip("\n"),
     )
+
+
+def run_review(
+    repo: Repo, provider: Provider, docs_review: bool, dry_run: bool
+) -> list[str]:
+    """Write the workflow(s); never overwrite. The final line is the one step
+    the wizard cannot take: the secret is repository state, like labels."""
+    actions = [
+        write_if_missing(repo, REVIEW, render_workflow("review.yml", provider), dry_run)
+    ]
+    if docs_review:
+        actions.append(
+            write_if_missing(
+                repo,
+                DOCS_REVIEW,
+                render_workflow("docs-review.yml", provider),
+                dry_run,
+            )
+        )
+    actions.append(f"next     gh secret set {provider.secret} --repo <owner/name>")
+    return actions

@@ -139,14 +139,33 @@ alongside this; that setting deletes first and asks nothing.
 
 ### Review bots
 
-L2.3 checks review workflows but does not write one, because a review bot is
-a model choice. The reference is wgan-synthetic
-(github.com/FibonAdithya/wgan-synthetic), whose workflows directory holds
-claude-review.yml and docs-review.yml: copy one, keep contents read-only,
-and keep "Read AGENTS.md first" in the prompt. The check fails on any
-`contents: write`, on a workflow that declares no `permissions` at all (the
-default token may write), and on a `pull_request_target` trigger, because a
-confidently wrong rewrite must cost a comment and never a commit.
+L2.3 is optional. Adopt writes no review workflow, because the model step
+is a choice; `agentify review` writes one for the provider you name:
+
+    agentify review . --provider claude                 # bills a Claude subscription
+    agentify review . --provider claude --auth api-key  # bills an API key instead
+    agentify review . --provider custom --uses owner/action@ref \
+        --auth-input <with-key> --secret <SECRET_NAME>
+    agentify review . --provider claude --docs-review   # adds docs-review.yml
+
+Omit a flag on a terminal and the command asks for it; without a terminal
+a missing flag is an error, so an agent never hangs on a prompt. A custom
+action must accept a `prompt` input: that is where the generated
+instructions go, and it is how L2.3 recognises a review workflow.
+
+The command ends by printing the secret to create, for example:
+
+    gh secret set CLAUDE_CODE_AUTH_TOKEN --repo <owner/name>
+
+For Claude the oauth token comes from `claude setup-token`. Without the
+secret the workflow fails on its first run and posts nothing.
+
+The generated prompt tells the model to read `AGENTS.md` and defers to its
+sections by name, so it never needs editing when the invariants change.
+The check fails on any `contents: write`, on a workflow that declares no
+`permissions` at all (the default token may write), and on a
+`pull_request_target` trigger, because a confidently wrong rewrite must
+cost a comment and never a commit.
 
 ### A hand-written Makefile
 

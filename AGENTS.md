@@ -15,8 +15,9 @@ check: `tests/test_contract.py` here is the same file adopt writes into any
 other repo.
 
 It is not a framework and not an agent. It writes plain files: a router, a
-Makefile, a CI workflow, two tests. Nothing it generates depends on any one
-agent's hooks, skills, or settings.
+Makefile, a CI workflow, two tests. `adopt` writes nothing that depends on
+any one agent's hooks, skills, or settings; `agentify review` writes a PR
+review workflow for the provider you name, and only when asked.
 
 ## Source of truth, in order
 
@@ -101,11 +102,12 @@ nobody.
 | Task | Start here |
 |---|---|
 | The contract and what each check enforces | `CONTRACT.md` |
-| Run the three commands | `README.md` |
+| Run the four commands | `README.md` |
 | Set up a development environment | `make setup` (a target in `Makefile`) |
 | Convert a repo and fill its markers | `docs/adopting.md` |
 | What a check does | `src/agentify/checks/`, one module per item |
 | What adopt writes | `src/agentify/templates/`, `src/agentify/contract.py::run_adopt` |
+| What `agentify review` writes | `src/agentify/review.py::run_review`, templates `src/agentify/templates/review.yml` and `src/agentify/templates/docs-review.yml` |
 | Language-specific behaviour | `src/agentify/adapters/python.py` |
 | Reference resolution in docs | `src/agentify/docs_refs.py::scan_docs` |
 | Why a decision was made (non-authoritative) | `docs/ai/specs/` |

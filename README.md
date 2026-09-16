@@ -10,11 +10,12 @@ writes the missing pieces. If you are an agent, read `AGENTS.md` first.
     uv pip install --python .venv/bin/python -e '.[dev]'
     export PATH=$PWD/.venv/bin:$PATH
 
-## The three commands
+## The four commands
 
-    agentify check <repo> [--level N]    # one row per contract item; exit 1 on any failure
-    agentify adopt <repo> [--level N]    # write the missing files; never overwrites
-    agentify fill  <repo>                # list the <<FILL>> markers left to write
+    agentify check  <repo> [--level N]          # one row per contract item; exit 1 on any failure
+    agentify adopt  <repo> [--level N]          # write the missing files; never overwrites
+    agentify fill   <repo>                      # list the <<FILL>> markers left to write
+    agentify review <repo> --provider claude    # write a PR review workflow; never overwrites
 
 `check` runs `make -n check` on the target repo (with a 30 s timeout), which
 lets GNU make expand `$(shell …)` forms in that repo's Makefile before any
@@ -40,7 +41,11 @@ Adds `.github/workflows/notify.yml` (an issue filed with the router's label
 reaches the owner) and `.github/workflows/branch-hygiene.yml` (a merged
 branch is deleted when it is finished, and a manual run sweeps the backlog).
 Level 2 also checks that `make setup` exists and that any PR review bot reads
-`AGENTS.md` and cannot push. Three labels must exist on GitHub before the
+`AGENTS.md` and cannot push. Adopt writes no review bot; `agentify review
+--provider claude` (or `--provider custom` with `--uses`, `--auth-input` and
+`--secret`) writes one, and `--docs-review` adds a second workflow for
+documentation drift. The workflow needs a repository secret, which the
+command names when it finishes. Three labels must exist on GitHub before the
 workflows are useful: without `agent-reported` and `auto-bug` nothing
 routes, and without `keep-branch` there is no way to opt a branch out
 before its first merge; `docs/adopting.md#labels` creates them.
